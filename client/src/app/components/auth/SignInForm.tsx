@@ -1,4 +1,3 @@
-// components/auth/SignInForm.tsx
 "use client";
 
 import React, { useState } from 'react';
@@ -13,8 +12,8 @@ interface SignInFormProps {
 
 const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToRegister }) => {
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -63,12 +62,42 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToRegister }) => {
     setIsLoading(true);
     setErrors({});
 
-    // Simulate API call
-    setTimeout(() => {
+    console.log("Submitting payload:", {
+      email: formData.email,
+      password: formData.password,
+      passLen: formData.password.length,
+    });
+
+
+    try {
+      const res = await fetch("http://localhost:8080/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+        credentials: "include",
+      });
+
+
+      if (!res.ok) {
+        // read the error text that Go returned
+        const errorText = await res.text();
+        alert(errorText || "Login Failed");
+        return;
+      }
+
+      const { token } = await res.json();
+      localStorage.setItem("token", token);
+
+      console.log(token)
+    } catch (err) {
+      console.error("Network error:", err);
+      alert("Something went wrong. Please try again.");
+    } finally {
       setIsLoading(false);
-      console.log('Sign In submitted:', formData);
-      // Redirect or handle success
-    }, 2000);
+    }
   };
 
   return (
