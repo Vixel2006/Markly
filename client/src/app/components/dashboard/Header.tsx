@@ -1,5 +1,5 @@
-// components/dashboard/Header.tsx
 import React from 'react';
+import Link from 'next/link'
 import { Search, Plus } from 'lucide-react';
 
 interface HeaderProps {
@@ -25,10 +25,10 @@ const Header: React.FC<HeaderProps> = ({ searchQuery, onSearchChange }) => {
             className="pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg w-full md:w-80 focus:outline-none focus:border-blue-500"
           />
         </div>
-        <button className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg transition-colors whitespace-nowrap">
+        <Link href="/app/addBookmark" className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg transition-colors whitespace-nowrap">
           <Plus className="w-5 h-5" />
           Add Bookmark
-        </button>
+        </Link>
       </div>
     </div>
   );

@@ -2,9 +2,13 @@
 import React from 'react';
 import { BookOpen, Folder, Zap, TrendingUp } from 'lucide-react';
 
-const StatsCards = () => {
+interface StatsCardsProps {
+  totalBookmarksCount: number;
+}
+
+const StatsCards: React.FC<StatusCardProps> = ({ totalBookmarksCount }) => {
   const stats = [
-    { title: 'Total Bookmarks', value: '1,247', icon: BookOpen, color: 'blue-400' },
+    { title: 'Total Bookmarks', value: totalBookmarksCount.toLocaleString(), icon: BookOpen, color: 'blue-400' },
     { title: 'Categories', value: '24', icon: Folder, color: 'purple-400' },
     { title: 'AI Suggestions', value: '38', icon: Zap, color: 'green-400' },
     { title: 'This Week', value: '156', icon: TrendingUp, color: 'orange-400' },

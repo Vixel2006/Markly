@@ -3,6 +3,7 @@
 
 import React, { useState } from 'react';
 import { BookOpen, ArrowRight, AlertCircle, Check, Mail, Lock, User } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import TextInput from './TextInput';
 import PasswordInput from './PasswordInput';
 import SocialButtons from './SocialButtons';
@@ -13,6 +14,7 @@ interface RegisterFormProps {
 }
 
 const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToSignIn }) => {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -79,12 +81,32 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToSignIn }) => {
     setIsLoading(true);
     setErrors({});
 
-    const res = await fetch("http://localhost:8080/api/auth/register", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({"name": formData.name, "email": formData.email, "password": formData.password}),
-      credintials: "include",
-    })
+    try {
+      const res = await fetch("http://localhost:8080/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+        }),
+        credentials: "include", // make sure spelling is correct
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        alert(errorText || "Registration failed");
+        return;
+      }
+
+      // If registration succeeded, redirect to sign-in
+      router.push('/auth?form=sign-in');
+    } catch (err) {
+      console.error("Network error:", err);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

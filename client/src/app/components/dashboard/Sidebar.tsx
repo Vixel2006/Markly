@@ -1,4 +1,8 @@
+"use client";
+
 import React from 'react';
+import Link from "next/link";
+import { usePathname } from 'next/navigation'; // Import usePathname for active link highlighting
 import { BookOpen, Globe, Star, Clock, Zap, Folder, User, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface SidebarProps {
@@ -8,17 +12,19 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle, categories }) => {
+  const pathname = usePathname(); // Get the current path
+
   const navItems = [
-    { icon: Globe, label: 'All Bookmarks', active: true },
-    { icon: Star, label: 'Favorites' },
-    { icon: Clock, label: 'Recent' },
-    { icon: Zap, label: 'AI Suggested' },
-    { icon: Folder, label: 'Collections' },
+    { icon: Globe, label: 'All Bookmarks', path: '/app' }, // Assuming dashboard is the main page
+    { icon: Star, label: 'Favorites', path: '/app/favorites' },
+    { icon: Clock, label: 'Recent', path: '/app/recent' },
+    { icon: Zap, label: 'AI Suggested', path: '/app/ai-suggested' },
+    { icon: Folder, label: 'Collections', path: '/app/collections' },
   ];
 
   const bottomItems = [
-    { icon: User, label: 'Profile' },
-    { icon: Settings, label: 'Settings' },
+    { icon: User, label: 'Profile', path: '/app/profile' }, // Corrected path for Profile
+    { icon: Settings, label: 'Settings', path: '/app/settings' },
   ];
 
   return (
@@ -31,12 +37,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle, categories }) =
       {isExpanded ? (
         // Header for Expanded State
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
+          <Link href="/app/dashboard" className="flex items-center gap-3"> {/* Wrap logo with Link */}
             <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
               <BookOpen className="w-5 h-5" />
             </div>
             <h1 className="text-xl font-bold">Markly</h1>
-          </div>
+          </Link>
           <button
             onClick={onToggle}
             className="text-slate-400 hover:text-white transition-colors p-1 rounded"
@@ -55,12 +61,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle, categories }) =
             <ChevronRight className="w-5 h-5" /> {/* Icon for expanding */}
           </button>
           {/* Logo element, centered below the button with increased margin */}
-          <div className="flex items-center justify-center mt-4"> {/* Increased mt-2 to mt-4 for better separation */}
+          <Link href="/app/dashboard" className="flex items-center justify-center mt-4"> {/* Wrap logo with Link */}
             <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
               <BookOpen className="w-5 h-5" />
             </div>
             {/* Title is not displayed when folded */}
-          </div>
+          </Link>
           {/* Spacer div to maintain consistent spacing between header and nav items */}
           <div className="mb-8"></div>
         </div>
@@ -68,16 +74,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle, categories }) =
 
       <nav className="space-y-2">
         {navItems.map((item, index) => (
-          <a
+          <Link // Use Next.js Link component
             key={index}
-            href="#"
+            href={item.path}
+            // Determine active state based on current pathname
             className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-              item.active ? 'bg-slate-700 text-blue-400' : 'hover:bg-slate-700'
+              pathname === item.path ? 'bg-slate-700 text-blue-400' : 'hover:bg-slate-700'
             } ${!isExpanded && 'justify-center'}`}
           >
             <item.icon className="w-5 h-5 flex-shrink-0" />
             {isExpanded && <span>{item.label}</span>}
-          </a>
+          </Link>
         ))}
       </nav>
 
@@ -103,15 +110,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isExpanded, onToggle, categories }) =
 
       <div className={`absolute bottom-4 left-4 right-4 space-y-2 ${!isExpanded && 'flex flex-col items-center gap-2'}`}>
         {bottomItems.map((item, index) => (
-          <div
+          <Link // Use Next.js Link component
             key={index}
+            href={item.path}
             className={`flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-700 cursor-pointer transition-colors ${
               !isExpanded && 'justify-center px-0'
-            }`}
+            } ${pathname === item.path ? 'bg-slate-700 text-blue-400' : ''}`}
           >
             <item.icon className="w-5 h-5 flex-shrink-0" />
             {isExpanded && <span className="text-sm">{item.label}</span>}
-          </div>
+          </Link>
         ))}
       </div>
     </div>

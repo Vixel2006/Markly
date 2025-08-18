@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { BookOpen, ArrowRight, AlertCircle, Mail, Lock } from 'lucide-react';
 import TextInput from './TextInput';
 import PasswordInput from './PasswordInput';
@@ -11,6 +12,7 @@ interface SignInFormProps {
 }
 
 const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToRegister }) => {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -91,7 +93,7 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToRegister }) => {
       const { token } = await res.json();
       localStorage.setItem("token", token);
 
-      console.log(token)
+      router.push('/app');
     } catch (err) {
       console.error("Network error:", err);
       alert("Something went wrong. Please try again.");
