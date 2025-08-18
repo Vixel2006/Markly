@@ -1,17 +1,24 @@
-// components/dashboard/StatsCards.tsx
 import React from 'react';
 import { BookOpen, Folder, Zap, TrendingUp } from 'lucide-react';
 
 interface StatsCardsProps {
   totalBookmarksCount: number;
+  totalCategoriesCount: number;
+  totalCollectionsCount: number;
+  totalTagsCount: number;
 }
 
-const StatsCards: React.FC<StatusCardProps> = ({ totalBookmarksCount }) => {
+const StatsCards: React.FC<StatsCardsProps> = ({
+  totalBookmarksCount,
+  totalCategoriesCount,
+  totalCollectionsCount,
+  totalTagsCount,
+}) => {
   const stats = [
     { title: 'Total Bookmarks', value: totalBookmarksCount.toLocaleString(), icon: BookOpen, color: 'blue-400' },
-    { title: 'Categories', value: '24', icon: Folder, color: 'purple-400' },
-    { title: 'AI Suggestions', value: '38', icon: Zap, color: 'green-400' },
-    { title: 'This Week', value: '156', icon: TrendingUp, color: 'orange-400' },
+    { title: 'Categories', value: totalCategoriesCount.toLocaleString(), icon: Folder, color: 'purple-400' },
+    { title: 'Collections', value: totalCollectionsCount.toLocaleString(), icon: Folder, color: 'green-400' },
+    { title: 'Total Tags', value: totalTagsCount.toLocaleString(), icon: TrendingUp, color: 'orange-400' },
   ];
 
   return (
@@ -23,7 +30,7 @@ const StatsCards: React.FC<StatusCardProps> = ({ totalBookmarksCount }) => {
               <p className="text-slate-400 text-sm">{stat.title}</p>
               <p className="text-xl md:text-2xl font-bold">{stat.value}</p>
             </div>
-            <div className={`w-10 h-10 md:w-12 md:h-12 bg-${stat.color} bg-opacity-20 rounded-lg flex items-center justify-center`}>
+            <div className={`w-10 h-10 md:w-12 md:h-12 bg-${stat.color.split('-')[0]}-500 bg-opacity-20 rounded-lg flex items-center justify-center`}>
               <stat.icon className={`w-5 h-5 md:w-6 md:h-6 text-${stat.color}`} />
             </div>
           </div>
