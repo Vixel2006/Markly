@@ -1,44 +1,51 @@
-import React from 'react';
-import { BookOpen, Zap, Search, Star, Globe, Folder, TrendingUp, X, Menu, Plus } from 'lucide-react'; // Ensure all icons are imported
+import React from "react";
+import { BookOpen, Plus, X, Folder, LayoutDashboard, Bookmark, Tags, Star, Lightbulb, ChevronLeft, ChevronRight, User } from "lucide-react";
+import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 
-// Define more precise interfaces if you have them in MarklyDashboard
-interface CategoryForDisplay {
+interface Category {
   id: string;
   name: string;
   emoji?: string;
+}
+
+interface CategoryForDisplay extends Category {
   count: number;
   icon: string;
   color: string;
 }
 
-interface CollectionForDisplay {
+interface Collection {
   id: string;
   name: string;
+}
+
+interface CollectionForDisplay extends Collection {
   count: number;
 }
 
-interface Tag { // Assuming a simpler Tag interface here for sidebar display
+interface Tag {
   id: string;
   name: string;
-  weeklyCount: number; // Keep consistent with MarklyDashboard
 }
 
 interface SidebarProps {
   isExpanded: boolean;
   onToggle: () => void;
-  activePanel: 'dashboard' | 'bookmarks' | 'collections' | 'tags' | 'favorites' | 'ai-suggested';
-  setActivePanel: (panel: 'dashboard' | 'bookmarks' | 'collections' | 'tags' | 'favorites' | 'ai-suggested') => void;
+  activePanel: string;
+  setActivePanel: (panel: string) => void;
   categories: CategoryForDisplay[];
   collections: CollectionForDisplay[];
   tags: Tag[];
-  onCategorySelect: (id: string | null) => void;
+  onCategorySelect: (categoryId: string | null) => void;
   selectedCategoryId: string | null;
-  onCollectionSelect: (id: string | null) => void;
+  onCollectionSelect: (collectionId: string | null) => void;
   selectedCollectionId: string | null;
-  onTagSelect: (id: string | null) => void;
+  onTagSelect: (tagId: string | null) => void;
   selectedTagId: string | null;
   onClearFilters: () => void;
   onAddCategoryClick: () => void;
+  onAddCollectionClick: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -57,179 +64,164 @@ const Sidebar: React.FC<SidebarProps> = ({
   selectedTagId,
   onClearFilters,
   onAddCategoryClick,
+  onAddCollectionClick,
 }) => {
-  const NavItem = ({ icon, label, panelName, isFilter = false, count = 0, isSelected = false, onClick }: any) => {
-    const activeBg = isSelected ? 'bg-purple-100 text-purple-700' : (activePanel === panelName && !isFilter ? 'bg-purple-100 text-purple-700' : '');
-    const hoverBg = isSelected ? 'hover:bg-purple-200' : 'hover:bg-green-50';
-    const textColor = isSelected ? 'text-purple-700' : 'text-slate-700';
+  const router = useRouter();
+  const navItems = [
+    { name: "Dashboard", icon: LayoutDashboard, panel: "dashboard" },
+    { name: "All Bookmarks", icon: Bookmark, panel: "bookmarks" },
+    { name: "Collections", icon: Folder, panel: "collections" },
+    { name: "Tags", icon: Tags, panel: "tags" },
+    { name: "Favorites", icon: Star, panel: "favorites" },
+    { name: "AI Suggested", icon: Lightbulb, panel: "ai-suggested" },
+    { name: "Profile", icon: User, panel: "profile" },
+  ];
 
-    return (
-      <button
-        onClick={onClick}
-        className={`flex items-center w-full p-3 rounded-md transition-colors duration-200
-                    ${activeBg} ${hoverBg} ${textColor}
-                    ${isExpanded ? '' : 'justify-center'}
-                  `}
-        aria-label={label}
-      >
-        {icon}
-        {isExpanded && <span className={`font-medium ${isExpanded ? 'ml-3' : ''}`}>{label}</span>}
-        {isExpanded && count > 0 && <span className="ml-auto text-xs font-semibold px-2 py-1 bg-green-100 rounded-full text-green-700">{count}</span>}
-      </button>
-    );
+  const sidebarVariants = {
+    expanded: { width: "16rem" },
+    collapsed: { width: "4rem" },
+  };
+
+  const itemVariants = {
+    expanded: { opacity: 1, x: 0 },
+    collapsed: { opacity: 0, x: -20 },
   };
 
   return (
-    <div className={`fixed inset-y-0 left-0 bg-white border-r border-green-100 shadow-xl transition-all duration-300 z-40
-                     ${isExpanded ? 'w-64' : 'w-16'}
-                     flex flex-col`}>
-      {/* Sidebar Header/Logo */}
-      <div className="flex items-center p-4 h-16 border-b border-green-100">
-        <div className="flex items-center gap-3">
+    <motion.div
+      className="bg-white border-r border-green-100 h-screen fixed top-0 left-0 flex flex-col shadow-lg z-40"
+      initial={isExpanded ? "expanded" : "collapsed"}
+      animate={isExpanded ? "expanded" : "collapsed"}
+      variants={sidebarVariants}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+    >
+      {/* Sidebar Header */}
+      <div className="flex items-center justify-between h-16 px-4 border-b border-green-100">
+        <motion.div
+          className="flex items-center gap-3"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: isExpanded ? 1 : 0 }}
+          transition={{ duration: 0.3 }}
+        >
           <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-purple-500 rounded-full flex items-center justify-center shadow-md">
             <BookOpen className="w-5 h-5 text-white" />
           </div>
           {isExpanded && <span className="text-xl font-bold text-black">Markly</span>}
-        </div>
+        </motion.div>
         <button
           onClick={onToggle}
-          className={`ml-auto text-slate-500 hover:text-black transition-colors md:block hidden ${isExpanded ? '' : 'absolute right-0 translate-x-1/2 bg-white border border-green-100 rounded-full p-1 shadow-md'}`}
-          aria-label={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+          className="p-2 rounded-full hover:bg-green-100 transition-colors text-slate-700"
         >
-          {isExpanded ? <X size={20} /> : <Menu size={20} />}
+          {isExpanded ? (
+            <ChevronLeft className="w-5 h-5" />
+          ) : (
+            <ChevronRight className="w-5 h-5" />
+          )}
         </button>
       </div>
 
-      {/* Main Navigation */}
-      <nav className="flex-1 mt-8 space-y-2 px-4 overflow-y-auto custom-scrollbar">
-        <NavItem
-          icon={<Zap size={20} />}
-          label="Dashboard"
-          panelName="dashboard"
-          isSelected={activePanel === 'dashboard'}
-          onClick={() => { setActivePanel('dashboard'); onClearFilters(); }}
-        />
-        <NavItem
-          icon={<BookOpen size={20} />}
-          label="All Bookmarks"
-          panelName="bookmarks"
-          isSelected={activePanel === 'bookmarks' && !selectedCategoryId && !selectedCollectionId && !selectedTagId}
-          onClick={() => { setActivePanel('bookmarks'); onClearFilters(); }}
-        />
-        <NavItem
-          icon={<Folder size={20} />}
-          label="Collections"
-          panelName="collections"
-          isSelected={activePanel === 'collections'}
-          onClick={() => {
-            setActivePanel('collections');
-            onCollectionSelect(null); // Clear specific collection view if navigating from filter or another panel
-            onClearFilters(); // Clear other filters
-          }}
-        />
-        <NavItem
-          icon={<Star size={20} />}
-          label="Favorites"
-          panelName="favorites"
-          isSelected={activePanel === 'favorites'}
-          onClick={() => { setActivePanel('favorites'); onClearFilters(); }}
-        />
-        {/* You can add 'AI Suggested' or 'Tags' as top-level if needed */}
+      {/* Navigation Items */}
+      <div className="flex-1 p-4 custom-scrollbar">
+        <h3 className={`text-xs font-semibold text-slate-500 uppercase mb-4 ${!isExpanded && 'hidden'}`}>MENU</h3>
+        <nav className="space-y-2 mb-6">
+          {navItems.map((item) => (
+            <motion.button
+              key={item.panel}
+              onClick={() => {
+                if (item.panel === "profile") {
+                  router.push("/app/profile");
+                } else if (item.panel === "bookmarks") {
+                  router.push("/app/bookmarks/all");
+                } else if (item.panel === "dashboard") {
+                  router.push("/app")
+                } else if (item.panel === "collections") {
+                  router.push("/app/collections")
+                } else {
+                  setActivePanel(item.panel);
+                  onClearFilters();
+                }
+              }}
+              className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-slate-700 hover:bg-green-100 ${
+                activePanel === item.panel ? 'bg-green-100 text-black font-semibold' : ''
+              }`}
+              whileHover={{ scale: 1.02 }}
+            >
+              <item.icon className="w-5 h-5 flex-shrink-0" />
+              {isExpanded && <motion.span variants={itemVariants}>{item.name}</motion.span>}
+            </motion.button>
+          ))}
+        </nav>
 
-        {isExpanded && (
-          <>
-            <div className="px-3 pt-6 pb-2 text-xs font-semibold uppercase text-slate-500">
-              Filters
-            </div>
-
-            {/* Categories Filter */}
-            <div className="mt-4 px-3">
-              <h3 className="text-sm font-semibold text-black mb-2">Categories</h3>
-              <ul className="space-y-1">
-                {categories.map((cat) => (
-                  <li key={cat.id}>
-                    <NavItem
-                      icon={<span className={`w-2.5 h-2.5 rounded-full mr-2 ${cat.color}`}></span>}
-                      label={cat.name}
-                      panelName="bookmarks" // Filters always show in bookmark feed
-                      isFilter={true}
-                      count={cat.count}
-                      isSelected={selectedCategoryId === cat.id}
-                      onClick={() => {
-                        onCategorySelect(cat.id);
-                        setActivePanel('bookmarks');
-                        onCollectionSelect(null);
-                        onTagSelect(null);
-                      }}
-                    />
-                  </li>
-                ))}
-                <li>
-                  <button
-                    onClick={onAddCategoryClick}
-                    className="flex items-center w-full p-2 rounded-md text-purple-600 hover:bg-green-50 hover:text-purple-700 transition-colors duration-200"
-                  >
-                    <Plus size={16} className="mr-2" /> Add Category
-                  </button>
-                </li>
-              </ul>
-            </div>
-
-            {/* Tags Filter */}
-            <div className="mt-4 px-3">
-              <h3 className="text-sm font-semibold text-black mb-2">Tags</h3>
-              <ul className="space-y-1">
-                {tags.map((tag) => (
-                  <li key={tag.id}>
-                    <NavItem
-                      icon={<span className="text-xs text-purple-500 mr-2">#</span>}
-                      label={tag.name}
-                      panelName="bookmarks"
-                      isFilter={true}
-                      count={tag.weeklyCount}
-                      isSelected={selectedTagId === tag.id}
-                      onClick={() => {
-                        onTagSelect(tag.id);
-                        setActivePanel('bookmarks');
-                        onCategorySelect(null);
-                        onCollectionSelect(null);
-                      }}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Clear All Filters button */}
-            {(selectedCategoryId || selectedCollectionId || selectedTagId || (activePanel === 'bookmarks' && searchQuery)) && (
-              <div className="mt-6 px-3">
-                <button
-                  onClick={onClearFilters}
-                  className="flex items-center w-full p-2 rounded-md text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors duration-200"
-                >
-                  <X size={16} className="mr-2" /> Clear All Filters
-                </button>
-              </div>
-            )}
-          </>
-        )}
-      </nav>
-
-      {/* Sidebar Footer/Profile */}
-      {isExpanded && (
-        <div className="mt-auto p-4 border-t border-green-100 flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-green-300 to-blue-300 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
-            JD
-          </div>
-          <div>
-            <div className="font-semibold text-black">John Doe</div>
-            <div className="text-sm text-slate-600">Free Plan</div>
-          </div>
+        {/* Categories */}
+        <h3 className={`text-xs font-semibold text-slate-500 uppercase mb-4 mt-6 ${!isExpanded && 'hidden'}`}>CATEGORIES</h3>
+        <div className="space-y-2 mb-6">
+          {categories.map((category) => (
+            <motion.button
+              key={category.id}
+              onClick={() => {
+                setActivePanel("bookmarks");
+                onCategorySelect(category.id);
+                onCollectionSelect(null);
+                onTagSelect(null);
+              }}
+              className={`w-full flex items-center justify-between p-3 rounded-xl transition-all text-slate-700 hover:bg-green-100 ${
+                selectedCategoryId === category.id ? 'bg-green-100 text-black font-semibold' : ''
+              }`}
+              whileHover={{ scale: 1.02 }}
+            >
+              <motion.span className="flex items-center gap-3" variants={itemVariants}>
+                <span>{category.icon}</span>
+                {isExpanded && <span>{category.name}</span>}
+              </motion.span>
+              {isExpanded && <motion.span className="text-sm font-medium text-slate-500 bg-green-50 px-2 py-0.5 rounded-full" variants={itemVariants}>{category.count}</motion.span>}
+            </motion.button>
+          ))}
+          <motion.button
+            onClick={onAddCategoryClick}
+            className="w-full flex items-center gap-3 p-3 rounded-xl text-purple-600 hover:bg-purple-50 transition-all"
+            whileHover={{ scale: 1.02 }}
+          >
+            <Plus className="w-5 h-5" />
+            {isExpanded && <motion.span variants={itemVariants}>Add New Category</motion.span>}
+          </motion.button>
         </div>
-      )}
-    </div>
+
+        {/* Collections */}
+        <h3 className={`text-xs font-semibold text-slate-500 uppercase mb-4 mt-6 ${!isExpanded && 'hidden'}`}>COLLECTIONS</h3>
+        <div className="space-y-2">
+          {collections.map((collection) => (
+            <motion.button
+              key={collection.id}
+              onClick={() => {
+                setActivePanel("collections");
+                onCollectionSelect(collection.id);
+                onCategorySelect(null);
+                onTagSelect(null);
+              }}
+              className={`w-full flex items-center justify-between p-3 rounded-xl transition-all text-slate-700 hover:bg-green-100 ${
+                selectedCollectionId === collection.id ? 'bg-green-100 text-black font-semibold' : ''
+              }`}
+              whileHover={{ scale: 1.02 }}
+            >
+              <motion.span className="flex items-center gap-3" variants={itemVariants}>
+                <Folder className="w-5 h-5 flex-shrink-0" />
+                {isExpanded && <span>{collection.name}</span>}
+              </motion.span>
+              {isExpanded && <motion.span className="text-sm font-medium text-slate-500 bg-green-50 px-2 py-0.5 rounded-full" variants={itemVariants}>{collection.count}</motion.span>}
+            </motion.button>
+          ))}
+          <motion.button
+            onClick={onAddCollectionClick}
+            className="w-full flex items-center gap-3 p-3 rounded-xl text-purple-600 hover:bg-purple-50 transition-all"
+            whileHover={{ scale: 1.02 }}
+          >
+            <Plus className="w-5 h-5" />
+            {isExpanded && <motion.span variants={itemVariants}>Add New Collection</motion.span>}
+          </motion.button>
+        </div>
+      </div>
+    </motion.div>
   );
 };
 
 export default Sidebar;
-

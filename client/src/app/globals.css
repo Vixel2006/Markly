@@ -8,3 +8,33 @@
 .animate-fadeIn {
   animation: fadeIn 0.6s ease-out forwards;
 }
+
+  /* Custom scrollbar for specific elements */
+  .custom-scrollbar {
+    overflow: overlay; /* For WebKit browsers to make scrollbar overlay content */
+    /* Fallback for other browsers */
+    scrollbar-width: thin; /* For Firefox, make it thin */
+    scrollbar-color: transparent transparent; /* Hide thumb and track by default for Firefox */
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px; /* Make it even thinner */
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent; /* Ensure track is always transparent */
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: transparent; /* Make thumb transparent by default */
+    border-radius: 2px; /* Adjust border-radius for thinner thumb */
+  }
+
+  .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+    background: linear-gradient(to bottom, #a855f7, #ec4899); /* Purple to pink gradient on hover */
+  }
+
+  .custom-scrollbar:hover {
+    /* Firefox hover state: only thumb visible, track transparent */
+    scrollbar-color: #a855f7 transparent;
+  }

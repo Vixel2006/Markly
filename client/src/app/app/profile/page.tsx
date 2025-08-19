@@ -1,144 +1,165 @@
 "use client";
+import React, { useEffect, useState, useCallback } from "react";
+import { motion } from "framer-motion";
+import { User, Mail, Calendar, LogOut } from "lucide-react";
 
-import React, { useState, useEffect } from 'react';
-import Sidebar from '../../components/dashboard/Sidebar';
-import Header from '../../components/dashboard/Header';
-import { User as UserIcon, Mail } from 'lucide-react';
-
-interface User {
+interface UserProfile {
   id: string;
-  name: string;
+  username: string;
   email: string;
+  createdAt: string;
 }
 
-const UserProfilePage = () => {
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [userProfile, setUserProfile] = useState<User | null>(null);
+export default function ProfilePage() {
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const categories = [
-    { name: "Development", count: 24, icon: "💻", color: "bg-blue-500" },
-    { name: "Design", count: 18, icon: "🎨", color: "bg-pink-500" },
-    { name: "Productivity", count: 30, icon: "⏱️", color: "bg-green-500" },
-    { name: "AI/ML", count: 12, icon: "🤖", color: "bg-purple-500" },
-  ];
+  const fetchData = useCallback(async <T,>(url: string, method: string = "GET", body?: any): Promise<T | null> => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setError("Authentication token missing. Please log in.");
+      return null;
+    }
+
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `${token}`,
+        },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.message || `API call failed with status ${response.status}`);
+      }
+      return await response.json();
+    } catch (err: any) {
+      console.error(`Network or API error fetching from ${url}: `, err);
+      setError(err.message || `Failed to fetch from ${url}`);
+      return null;
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        setError("Authentication token not found. Please log in.");
-        setLoading(false);
-        return;
-      }
-
+    const getMyProfile = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const res = await fetch("http://localhost:8080/api/me", {
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `${token}`
-          }
-        });
-
-        if (!res.ok) {
-          const errText = await res.text();
-          // Attempt to parse error as JSON if possible, otherwise use raw text
-          try {
-            const errData = JSON.parse(errText);
-            setError(errData.message || "Failed to fetch user profile.");
-          } catch (parseError) {
-            setError(errText || `Failed to fetch user profile: ${res.status} ${res.statusText}`);
-          }
-          return;
+        const profile = await fetchData<UserProfile>("http://localhost:8080/api/me");
+        if (profile) {
+          setUserProfile(profile);
         }
-
-        const data: User = await res.json();
-        setUserProfile(data);
-      } catch (err) {
-        console.error("Network error fetching user profile: ", err);
-        setError("Network error. Please try again.");
+      } catch (err: any) {
+        setError(err.message || "Failed to load profile.");
       } finally {
         setLoading(false);
       }
     };
+    getMyProfile();
+  }, [fetchData]);
 
-    fetchUserProfile();
-  }, []);
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    window.location.href = "/auth"; // Redirect to login page
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-b from-green-50 to-green-200 text-slate-700">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-xl font-semibold"
+        >
+          Loading profile...
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-b from-red-50 to-red-100 text-red-700">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-xl font-semibold"
+        >
+          Error: {error}
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (!userProfile) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-b from-yellow-50 to-yellow-100 text-yellow-700">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-xl font-semibold"
+        >
+          No profile data found.
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex">
-      <Sidebar
-        isExpanded={isSidebarExpanded}
-        onToggle={() => setIsSidebarExpanded(!isSidebarExpanded)}
-        categories={categories}
-      />
-      <div
-        className={`flex-1 transition-all duration-300 ${
-          isSidebarExpanded ? 'ml-64' : 'ml-16'
-        } p-4 md:p-6`}
+    <div className="min-h-screen bg-gray-50 p-8 pt-24 custom-scrollbar">
+      <motion.div
+        className="bg-white rounded-3xl shadow-xl p-8 max-w-2xl mx-auto border border-green-100"
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
       >
-        <Header
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-        />
+        <h1 className="text-4xl font-extrabold text-black mb-6 text-center">My Profile</h1>
 
-        <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 max-w-xl mx-auto mt-8">
-          <h2 className="text-2xl font-bold mb-6 text-center">User Profile</h2>
-
-          {loading && (
-            <div className="flex justify-center items-center h-48 flex-col">
-              <svg className="animate-spin h-8 w-8 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span className="mt-3 text-lg text-slate-400">Loading profile...</span>
+        <div className="space-y-6">
+          <div className="flex items-center gap-4 p-4 bg-green-50 rounded-xl shadow-sm">
+            <User className="w-6 h-6 text-purple-600 flex-shrink-0" />
+            <div className="flex flex-col">
+              <span className="text-sm text-slate-500">Username</span>
+              <span className="text-lg font-semibold text-black">{userProfile.username}</span>
             </div>
-          )}
+          </div>
 
-          {error && (
-            <div className="bg-red-900 bg-opacity-30 border border-red-700 text-red-300 p-3 rounded-lg text-sm text-center">
-              {error}
+          <div className="flex items-center gap-4 p-4 bg-green-50 rounded-xl shadow-sm">
+            <Mail className="w-6 h-6 text-purple-600 flex-shrink-0" />
+            <div className="flex flex-col">
+              <span className="text-sm text-slate-500">Email</span>
+              <span className="text-lg font-semibold text-black">{userProfile.email}</span>
             </div>
-          )}
+          </div>
 
-          {userProfile && !loading && !error && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-4 bg-slate-700 p-4 rounded-lg border border-slate-600">
-                <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <UserIcon className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-slate-400 text-sm">Name</p>
-                  <p className="text-xl font-semibold">{userProfile.name}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 bg-slate-700 p-4 rounded-lg border border-slate-600">
-                <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Mail className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-slate-400 text-sm">Email</p>
-                  <p className="text-xl font-semibold">{userProfile.email}</p>
-                </div>
-              </div>
-
-              {/* You might add an "Edit Profile" button here later */}
-              {/* <button
-                className="w-full bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg transition-colors font-semibold mt-6"
-                // onClick={() => router.push('/edit-profile')}
-              >
-                Edit Profile
-              </button> */}
+          <div className="flex items-center gap-4 p-4 bg-green-50 rounded-xl shadow-sm">
+            <Calendar className="w-6 h-6 text-purple-600 flex-shrink-0" />
+            <div className="flex flex-col">
+              <span className="text-sm text-slate-500">Member Since</span>
+              <span className="text-lg font-semibold text-black">
+                {new Date(userProfile.createdAt).toLocaleDateString()}
+              </span>
             </div>
-          )}
+          </div>
         </div>
-      </div>
+
+        <motion.button
+          onClick={handleLogout}
+          className="w-full mt-8 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold py-3 rounded-lg shadow-md transition-all flex items-center justify-center gap-2"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <LogOut className="w-5 h-5" />
+          Logout
+        </motion.button>
+      </motion.div>
     </div>
   );
-};
-
-export default UserProfilePage;
+}

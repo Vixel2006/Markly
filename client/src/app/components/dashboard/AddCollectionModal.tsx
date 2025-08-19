@@ -1,11 +1,11 @@
-// components/dashboard/AddCollectionModal.tsx
-import React, { useState, useEffect } from 'react';
-import { Plus, X } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface AddCollectionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddCollection: (name: string) => Promise<void>;
+  onAddCollection: (name: string) => void;
   isLoading: boolean;
   error: string | null;
 }
@@ -17,93 +17,85 @@ const AddCollectionModal: React.FC<AddCollectionModalProps> = ({
   isLoading,
   error,
 }) => {
-  const [collectionName, setCollectionName] = useState('');
-  const [localError, setLocalError] = useState<string | null>(null);
+  const [name, setName] = useState("");
 
   useEffect(() => {
     if (!isOpen) {
-      setCollectionName('');
-      setLocalError(null);
+      setName("");
     }
   }, [isOpen]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLocalError(null);
-
-    if (!collectionName.trim()) {
-      setLocalError("Collection name cannot be empty.");
-      return;
-    }
-
-    try {
-      await onAddCollection(collectionName);
-      // Parent component (MarklyDashboard) will handle closing on success
-    } catch (err) {
-      // Error is handled by parent's error state, but local for immediate feedback if needed
-      setLocalError("Failed to add collection. Please try again.");
-      console.error("Error in AddCollectionModal handleSubmit:", err);
-    }
+    if (!name.trim()) return;
+    onAddCollection(name);
   };
 
   if (!isOpen) return null;
 
+  const modalVariants = {
+    hidden: { opacity: 0, y: -50 },
+    visible: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: 50 },
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm">
-      <div className="relative w-full max-w-lg rounded-lg bg-slate-800 p-6 shadow-xl border border-slate-700 animate-fade-in-up">
-        <button
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute right-4 top-4 text-slate-400 hover:text-white transition-colors duration-200"
-          aria-label="Close"
         >
-          <X size={24} />
-        </button>
+          <motion.div
+            className="bg-white rounded-3xl shadow-2xl p-6 md:p-8 w-full max-w-md max-h-[90vh] transform scale-95 custom-scrollbar"
+            variants={modalVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-black">Add New Collection</h2>
+              <button
+                onClick={onClose}
+                className="p-2 rounded-full hover:bg-red-100 text-red-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-        <h2 className="mb-6 text-2xl font-bold text-white flex items-center">
-          <Plus size={24} className="mr-2 text-indigo-400" /> Add New Collection
-        </h2>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-1">Collection Name <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full p-3 border border-green-200 rounded-lg bg-green-50 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all"
+                  required
+                />
+              </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label htmlFor="collectionName" className="mb-2 block text-sm font-medium text-slate-300">
-              Collection Name
-            </label>
-            <input
-              type="text"
-              id="collectionName"
-              value={collectionName}
-              onChange={(e) => setCollectionName(e.target.value)}
-              className="w-full rounded-md border border-slate-600 bg-slate-700 p-3 text-white placeholder-slate-400 focus:border-indigo-500 focus:ring-indigo-500"
-              placeholder="e.g., Web Development Resources"
-              required
-              disabled={isLoading}
-            />
-          </div>
+              {error && <p className="text-red-500 text-sm">Error: {error}</p>}
 
-          {(error || localError) && (
-            <p className="mb-4 text-sm text-red-400">{error || localError}</p>
-          )}
-
-          <div className="flex justify-end space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-md bg-slate-600 px-5 py-2 text-white hover:bg-slate-500 transition-colors duration-200"
-              disabled={isLoading}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="rounded-md bg-indigo-600 px-5 py-2 text-white hover:bg-indigo-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Adding...' : 'Add Collection'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+              <motion.button
+                type="submit"
+                className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold py-3 rounded-lg shadow-md transition-all flex items-center justify-center gap-2"
+                disabled={isLoading}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {isLoading ? "Adding Collection..." : "Add Collection"}
+              </motion.button>
+            </form>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 

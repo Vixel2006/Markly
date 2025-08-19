@@ -1,13 +1,12 @@
-import React from 'react';
-import { Search, Plus, List, Grid } from 'lucide-react';
+import React from "react";
+import { Search, Plus } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface HeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onAddBookmarkClick: () => void;
   totalBookmarksCount: number;
-  viewMode: 'card' | 'list';
-  onViewModeChange: (mode: 'card' | 'list') => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -15,64 +14,39 @@ const Header: React.FC<HeaderProps> = ({
   onSearchChange,
   onAddBookmarkClick,
   totalBookmarksCount,
-  viewMode,
-  onViewModeChange,
 }) => {
   return (
-    <div className="sticky top-0 z-20 bg-gradient-to-br from-green-50 via-green-100 to-purple-50 pt-6 pb-4 -mx-6 px-6">
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-        {/* Search Bar */}
-        <div className="relative flex-1 w-full md:w-auto">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-500 w-5 h-5" />
+    <motion.header
+      className="bg-white rounded-2xl shadow-md p-4 flex items-center justify-between border border-green-100 mb-6"
+      initial={{ opacity: 0, y: -50 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className="flex-1 flex items-center gap-4">
+        <h1 className="text-2xl font-bold text-black hidden md:block">Your Knowledge Vault</h1>
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
           <input
             type="text"
-            placeholder="Search your bookmarks..."
+            placeholder="Search all bookmarks..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-white border border-green-200 rounded-full
-                       text-black placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 shadow-sm"
+            className="w-full pl-10 pr-4 py-2 rounded-full border border-green-200 bg-green-50 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all"
           />
         </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center rounded-full bg-white border border-green-200 p-1 shadow-sm">
-            <button
-              onClick={() => onViewModeChange('card')}
-              className={`p-2 rounded-full transition-all ${
-                viewMode === 'card' ? 'bg-green-100 text-green-700' : 'text-slate-500 hover:text-black'
-              }`}
-              aria-label="Card View"
-            >
-              <Grid size={20} />
-            </button>
-            <button
-              onClick={() => onViewModeChange('list')}
-              className={`p-2 rounded-full transition-all ${
-                viewMode === 'list' ? 'bg-green-100 text-green-700' : 'text-slate-500 hover:text-black'
-              }`}
-              aria-label="List View"
-            >
-              <List size={20} />
-            </button>
-          </div>
-
-          <button
-            onClick={onAddBookmarkClick}
-            className="inline-flex items-center rounded-full bg-gradient-to-r from-pink-500 to-purple-500
-                       px-5 py-2.5 text-white font-medium transition-all transform hover:scale-105 shadow-lg hover:shadow-xl"
-          >
-            <Plus size={20} className="mr-2" /> Add Bookmark
-          </button>
-        </div>
       </div>
 
-      <div className="mt-4 text-sm text-slate-600 text-center md:text-left">
-        You have <span className="font-semibold text-black">{totalBookmarksCount}</span> bookmarks.
-      </div>
-    </div>
+      <motion.button
+        onClick={onAddBookmarkClick}
+        className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 px-5 py-2.5 rounded-full text-white font-medium transition-all transform hover:scale-105 shadow-md flex items-center gap-2"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        <Plus className="w-5 h-5" />
+        <span className="hidden sm:inline">Add Bookmark</span>
+      </motion.button>
+    </motion.header>
   );
 };
 
 export default Header;
-
