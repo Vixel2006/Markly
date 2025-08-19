@@ -22,10 +22,10 @@ interface BookmarkData {
   url: string;
   title: string;
   summary: string;
-  tags: string[];
-  collections: string[];
-  category?: string;
-  isFav: boolean;
+  tag_ids: string[];
+  collection_ids: string[];
+  category_id?: string;
+  is_fav: boolean;
   thumbnail?: string;
 }
 
@@ -61,6 +61,7 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
   const [isFav, setIsFav] = useState(false);
 
+  // Reset form fields when modal closes
   useEffect(() => {
     if (!isOpen) {
       setUrl("");
@@ -90,6 +91,14 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
     setNewTagInput("");
   };
 
+  const handleCollectionToggle = (collectionId: string) => {
+    setSelectedCollections((prev) =>
+      prev.includes(collectionId)
+        ? prev.filter((id) => id !== collectionId)
+        : [...prev, collectionId]
+    );
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!url || !title) return;
@@ -98,10 +107,10 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
       url,
       title,
       summary,
-      tags: selectedTags,
-      collections: selectedCollections,
-      category: selectedCategory,
-      isFav,
+      tag_ids: selectedTags,
+      collection_ids: selectedCollections,
+      category_id: selectedCategory,
+      is_fav: isFav,
     });
   };
 
@@ -121,15 +130,15 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={onClose} 
+          onClick={onClose}
         >
           <motion.div
-            className="bg-white rounded-3xl shadow-2xl p-6 md:p-8 w-full max-w-lg max-h-[90vh] transform scale-95 custom-scrollbar"
+            className="bg-white rounded-3xl shadow-2xl p-6 md:p-8 w-full max-w-lg max-h-[90vh] overflow-y-auto transform scale-95 custom-scrollbar"
             variants={modalVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
-            onClick={(e) => e.stopPropagation()} 
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-black">Add New Bookmark</h2>
@@ -181,7 +190,7 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
                 <label htmlFor="category" className="block text-sm font-medium text-slate-700 mb-1">Category</label>
                 <select
                   id="category"
-                  value={selectedCategory}
+                  value={selectedCategory || ""} // Controlled component
                   onChange={(e) => setSelectedCategory(e.target.value || undefined)}
                   className="w-full p-3 border border-green-200 rounded-lg bg-green-50 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all"
                 >
@@ -192,23 +201,43 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
                 </select>
               </div>
 
+              {/* Collections field updated to be like tags */}
               <div>
-                <label htmlFor="collections" className="block text-sm font-medium text-slate-700 mb-1">Collections</label>
-                <select
-                  id="collections"
-                  multiple
-                  value={selectedCollections}
-                  onChange={(e) =>
-                    setSelectedCollections(
-                      Array.from(e.target.selectedOptions, (option) => option.value)
-                    )
-                  }
-                  className="w-full p-3 border border-green-200 rounded-lg bg-green-50 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all h-24"
-                >
-                  {collections.map((col) => (
-                    <option key={col.id} value={col.id}>{col.name}</option>
-                  ))}
-                </select>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Collections</label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {selectedCollections.map((colId) => {
+                    const collection = collections.find(c => c.id === colId);
+                    return collection ? (
+                      <span key={colId} className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                        {collection.name}
+                        <button
+                          type="button"
+                          onClick={() => handleCollectionToggle(colId)}
+                          className="ml-2 text-blue-500 hover:text-blue-700"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ) : null;
+                  })}
+                </div>
+                {collections.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2 border border-green-200 rounded-lg p-2 bg-green-50 max-h-28 overflow-y-auto custom-scrollbar">
+                    {collections.filter(col => !selectedCollections.includes(col.id)).map(col => (
+                      <button
+                        key={col.id}
+                        type="button"
+                        onClick={() => handleCollectionToggle(col.id)}
+                        className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm hover:bg-green-200 transition-colors"
+                      >
+                        {col.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {collections.length === 0 && (
+                  <p className="text-sm text-slate-500">No collections available. Create some in the dashboard sidebar!</p>
+                )}
               </div>
 
               <div>
@@ -235,6 +264,12 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
                     type="text"
                     value={newTagInput}
                     onChange={(e) => setNewTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault(); // Prevent form submission
+                        handleTagAdd();
+                      }
+                    }}
                     placeholder="Add new tag or select existing"
                     className="flex-1 p-3 border border-green-200 rounded-lg bg-green-50 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all"
                   />
@@ -246,18 +281,23 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
                     <Plus className="w-5 h-5" />
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {tags.filter(tag => !selectedTags.includes(tag.id)).map(tag => (
-                    <button
-                      key={tag.id}
-                      type="button"
-                      onClick={() => setSelectedTags([...selectedTags, tag.id])}
-                      className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm hover:bg-green-200 transition-colors"
-                    >
-                      {tag.name}
-                    </button>
-                  ))}
-                </div>
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2 border border-green-200 rounded-lg p-2 bg-green-50 max-h-28 overflow-y-auto custom-scrollbar">
+                    {tags.filter(tag => !selectedTags.includes(tag.id)).map(tag => (
+                      <button
+                        key={tag.id}
+                        type="button"
+                        onClick={() => setSelectedTags([...selectedTags, tag.id])}
+                        className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm hover:bg-green-200 transition-colors"
+                      >
+                        {tag.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {tags.length === 0 && (
+                  <p className="text-sm text-slate-500">No tags available. Add a new one above!</p>
+                )}
               </div>
 
               <div className="flex items-center gap-2">

@@ -136,6 +136,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                   router.push("/app")
                 } else if (item.panel === "collections") {
                   router.push("/app/collections")
+                } else if (item.panel === "favorites") {
+                  router.push("/app/bookmarks/favorite")
                 } else {
                   setActivePanel(item.panel);
                   onClearFilters();

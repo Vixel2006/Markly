@@ -9,6 +9,7 @@ import Header from "../components/dashboard/Header";
 import AddBookmarkModal from "../components/dashboard/AddBookmarkModal";
 import AddCategoryModal from "../components/dashboard/AddCategoryModal";
 import AddCollectionModal from "../components/dashboard/AddCollectionModal";
+import BookmarkCard from "../components/dashboard/BookmarkCard";
 
 interface Category {
   id: string;
@@ -39,27 +40,41 @@ interface Tag {
   createdAt: string;
 }
 
-interface Bookmark {
+// Bookmark interface as received from the backend API
+interface BackendBookmark {
+  id: string;
+  url: string;
+  title: string;
+  summary: string;
+  tags: string[]; // Array of tag IDs
+  collections: string[]; // Array of collection IDs
+  category: string | null; // Single category ID or null
+  created_at: string; // Backend uses snake_case for timestamp
+  user_id: string; // Backend uses snake_case for user ID
+  is_fav: boolean; // Backend uses snake_case for is_fav
+}
+
+// Bookmark interface for frontend display (as expected by BookmarkCard)
+interface FrontendBookmark {
   id: string;
   url: string;
   title: string;
   summary: string;
   tags: Tag[];
   collections: Collection[];
-  category?: Category;
-  datetime: string;
-  userId: string;
-  isFav: boolean;
-  thumbnail?: string;
+  categories?: Category[]; // Array of full category objects for display (optional)
+  createdAt: string; // Consistent camelCase for frontend display
+  isFav: boolean; // Consistent camelCase for frontend display
 }
 
+// BookmarkData interface for sending data to the backend API
 interface BookmarkData {
   url: string;
   title: string;
   summary: string;
-  tags: string[];
-  collections: string[];
-  category?: string;
+  tag_ids: string[]; // Backend expects snake_case IDs
+  collection_ids: string[]; // Backend expects snake_case IDs
+  category_id?: string; // Optional single category ID, backend expects snake_case
 }
 
 const MarklyDashboard = () => {
@@ -68,17 +83,13 @@ const MarklyDashboard = () => {
   const [activePanel, setActivePanel] = useState<string>("dashboard");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const [userBookmarks, setUserBookmarks] = useState<Bookmark[]>([]);
+  const [userBookmarks, setUserBookmarks] = useState<FrontendBookmark[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
 
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
-    null
-  );
-  const [selectedCollectionId, setSelectedCollectionId] = useState<
-    string | null
-  >(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
 
   const [isAddBookmarkModalOpen, setIsAddBookmarkModalOpen] = useState(false);
@@ -93,6 +104,9 @@ const MarklyDashboard = () => {
   const [addCollectionLoading, setAddCollectionLoading] = useState(false);
   const [addCollectionError, setAddCollectionError] = useState<string | null>(null);
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const fetchData = useCallback(
     async <T,>(
       url: string,
@@ -103,7 +117,6 @@ const MarklyDashboard = () => {
       if (!token) {
         console.warn("No token found. User might not be authenticated.");
         setError("Authentication token missing. Please log in.");
-        // router.push("/login");
         return null;
       }
 
@@ -122,6 +135,11 @@ const MarklyDashboard = () => {
         const res = await fetch(url, fetchOptions);
 
         if (!res.ok) {
+          if (res.status === 401) {
+            localStorage.removeItem("token");
+            router.push("/auth");
+            throw new Error("Unauthorized. Please log in again.");
+          }
           const errText = await res.text();
           try {
             const errorJson = JSON.parse(errText);
@@ -143,45 +161,30 @@ const MarklyDashboard = () => {
         return await res.json();
       } catch (err: any) {
         console.error(`Network or API error fetching from ${url}: `, err);
-        throw err;
+        throw err; // Re-throw to be handled by calling function
       }
     },
-    []
+    [router]
   );
 
-  const handleAddNewTag = async (tagName: string): Promise<Tag | null> => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(`http://localhost:8080/api/tags`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ name: tagName }),
-      });
+  const handleAddNewTag = useCallback(async (tagName: string): Promise<Tag | null> => {
+    const existingTag = tags.find(tag => tag.name.toLowerCase() === tagName.toLowerCase());
+    if (existingTag) {
+      return existingTag;
+    }
 
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(
-          errData.message || `Failed to add tag: ${response.statusText}`
-        );
+    try {
+      const response = await fetchData<Tag>(`http://localhost:8080/api/tags`, "POST", { name: tagName });
+      if (response) {
+        setTags((prevTags) => [...prevTags, response]);
+        return response;
       }
-      const newTag: Tag = await response.json();
-      setTags((prevTags) => [...prevTags, newTag]);
-      return newTag;
     } catch (err: any) {
       console.error("Error adding new tag:", err);
       setError(err.message || "Failed to add tag.");
-      return null;
-    } finally {
-      setLoading(false);
     }
-  };
-
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+    return null;
+  }, [fetchData, tags]);
 
   const loadDashboardData = useCallback(async () => {
     setLoading(true);
@@ -191,37 +194,53 @@ const MarklyDashboard = () => {
         fetchedCategories,
         fetchedCollections,
         fetchedTags,
-        fetchedBookmarks,
+        backendBookmarks,
       ] = await Promise.all([
-        fetchData<Category[]>("http://localhost:8080/api/categories"),
-        fetchData<Collection[]>("http://localhost:8080/api/collections"),
-        fetchData<Tag[]>("http://localhost:8080/api/tags"),
-        fetchData<Bookmark[]>("http://localhost:8080/api/bookmarks"),
+        fetchData<Category[]>(`http://localhost:8080/api/categories`),
+        fetchData<Collection[]>(`http://localhost:8080/api/collections`),
+        fetchData<Tag[]>(`http://localhost:8080/api/tags`),
+        fetchData<BackendBookmark[]>(`http://localhost:8080/api/bookmarks`),
       ]);
 
-      if (fetchedCategories)
-        setCategories(
-          fetchedCategories.map((cat) => ({
-            id: cat.id,
-            name: cat.name,
-            emoji: cat.emoji,
-          }))
-        );
-      if (fetchedCollections)
-        setCollections(
-          fetchedCollections.map((col) => ({ id: col.id, name: col.name }))
-        );
-      if (fetchedTags)
-        setTags(
-          fetchedTags.map((tag) => ({
-            id: tag.id,
-            name: tag.name,
-            weeklyCount: (tag as any).weekly_count || tag.weeklyCount,
-            prevCount: (tag as any).prev_count || tag.prevCount,
-            createdAt: (tag as any).created_at || tag.createdAt,
-          }))
-        );
-      if (fetchedBookmarks) setUserBookmarks(fetchedBookmarks);
+      // Ensure we have arrays even if API returns null
+      const actualCategories = fetchedCategories || [];
+      const actualCollections = fetchedCollections || [];
+      const actualTags = fetchedTags || [];
+      const actualBookmarks = backendBookmarks || [];
+
+      // Set basic data first
+      setCategories(actualCategories);
+      setCollections(actualCollections);
+      setTags(actualTags);
+
+      // Hydrate bookmarks with full objects
+      const hydratedBookmarks: FrontendBookmark[] = actualBookmarks.map((bm) => {
+        const hydratedTags = (bm.tags || [])
+          .map((tagId) => actualTags.find((t) => t.id === tagId))
+          .filter((tag): tag is Tag => tag !== undefined);
+        
+        const hydratedCollections = (bm.collections || [])
+          .map((colId) => actualCollections.find((c) => c.id === colId))
+          .filter((col): col is Collection => col !== undefined);
+        
+        const hydratedCategories = bm.category
+          ? actualCategories.filter((cat) => cat.id === bm.category)
+          : [];
+        
+        return {
+          id: bm.id,
+          url: bm.url,
+          title: bm.title,
+          summary: bm.summary,
+          tags: hydratedTags,
+          collections: hydratedCollections,
+          categories: hydratedCategories,
+          createdAt: bm.created_at,
+          isFav: bm.is_fav,
+        };
+      });
+
+      setUserBookmarks(hydratedBookmarks);
     } catch (err: any) {
       setError(
         err.message || "An unexpected error occurred loading dashboard data."
@@ -248,10 +267,10 @@ const MarklyDashboard = () => {
       console.log(`Current isFav: ${bookmarkToToggle.isFav}, new status will be: ${newFavStatus}`);
 
       try {
-        const updatedBm = await fetchData<Bookmark>(
+        const updatedBm = await fetchData<BackendBookmark>(
           `http://localhost:8080/api/bookmarks/${bookmarkId}`,
           "PUT",
-          { isFav: newFavStatus }
+          { is_fav: newFavStatus }
         );
         if (updatedBm) {
           console.log("Bookmark updated successfully on backend:", updatedBm);
@@ -276,14 +295,21 @@ const MarklyDashboard = () => {
       setAddBookmarkLoading(true);
       setAddBookmarkError(null);
       try {
-        const newBookmark = await fetchData<Bookmark>(
+        const newBookmark = await fetchData<BackendBookmark>(
           "http://localhost:8080/api/bookmarks",
           "POST",
-          { ...bookmarkData }
+          {
+            url: bookmarkData.url,
+            title: bookmarkData.title,
+            summary: bookmarkData.summary,
+            tag_ids: bookmarkData.tag_ids,
+            collection_ids: bookmarkData.collection_ids,
+            category_id: bookmarkData.category_id,
+          }
         );
         if (newBookmark) {
-          setUserBookmarks((prev) => [newBookmark, ...prev]);
           setIsAddBookmarkModalOpen(false);
+          // Re-fetch all data to ensure consistency
           await loadDashboardData();
         }
       } catch (err: any) {
@@ -306,8 +332,8 @@ const MarklyDashboard = () => {
           { name, emoji }
         );
         if (newCategory) {
-          await loadDashboardData();
           setIsAddCategoryModalOpen(false);
+          await loadDashboardData();
         }
       } catch (err: any) {
         setAddCategoryError(err.message || "Failed to add category.");
@@ -329,9 +355,8 @@ const MarklyDashboard = () => {
           { name }
         );
         if (newCollection) {
-          setCollections((prev) => [...prev, newCollection]);
-          await loadDashboardData();
           setIsAddCollectionModalOpen(false);
+          await loadDashboardData();
         }
       } catch (err: any) {
         setAddCollectionError(err.message || "Failed to add collection.");
@@ -342,36 +367,35 @@ const MarklyDashboard = () => {
     [fetchData, loadDashboardData]
   );
 
+  const getDefaultCategoryColor = (categoryName: string): string => {
+    switch (categoryName.toLowerCase()) {
+      case "development":
+        return "bg-blue-500";
+      case "design":
+        return "bg-purple-500";
+      case "productivity":
+        return "bg-green-500";
+      case "marketing":
+        return "bg-red-500";
+      case "finance":
+        return "bg-yellow-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
   const categoriesForDisplay: CategoryForDisplay[] = useMemo(() => {
-    return categories.map((cat) => {
-      const count = userBookmarks.filter(
-        (bm) => bm.category?.id === cat.id
+    return (categories || []).map((cat) => {
+      const count = (userBookmarks || []).filter(
+        (bm) => bm.categories?.some((c) => c.id === cat.id)
       ).length;
       const displayIcon = cat.emoji || "📚";
-      let assignedColor = "bg-gray-500";
-      switch (cat.name.toLowerCase()) {
-        case "development":
-          assignedColor = "bg-blue-500";
-          break;
-        case "design":
-          assignedColor = "bg-purple-500";
-          break;
-        case "productivity":
-          assignedColor = "bg-green-500";
-          break;
-        case "marketing":
-          assignedColor = "bg-red-500";
-          break;
-        case "finance":
-          assignedColor = "bg-yellow-500";
-          break;
-        default:
-          assignedColor = "bg-gray-500";
-          break;
-      }
+      const assignedColor = getDefaultCategoryColor(cat.name);
+      
       return {
         id: cat.id,
         name: cat.name,
+        emoji: cat.emoji,
         count: count,
         icon: displayIcon,
         color: assignedColor,
@@ -380,9 +404,9 @@ const MarklyDashboard = () => {
   }, [categories, userBookmarks]);
 
   const collectionsForDisplay: CollectionForDisplay[] = useMemo(() => {
-    return collections.map((col) => ({
+    return (collections || []).map((col) => ({
       ...col,
-      count: userBookmarks.filter((bm) =>
+      count: (userBookmarks || []).filter((bm) =>
         bm && bm.collections?.some((c) => c.id === col.id)
       ).length,
     }));
@@ -391,9 +415,14 @@ const MarklyDashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 text-slate-900 flex items-center justify-center">
-        <p className="text-xl font-semibold text-slate-700">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-xl font-semibold text-slate-700"
+        >
           Loading your Markly knowledge base...
-        </p>
+        </motion.div>
       </div>
     );
   }
@@ -401,17 +430,35 @@ const MarklyDashboard = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-red-50 text-red-700 flex flex-col items-center justify-center p-4">
-        <p className="text-xl font-bold mb-4">Error Loading Dashboard</p>
-        <p className="text-center">{error}</p>
-        <p className="text-sm mt-2">
-          Please check your network connection or try again later.
-        </p>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center"
+        >
+          <p className="text-xl font-bold mb-4">Error Loading Dashboard</p>
+          <p className="text-center mb-4">{error}</p>
+          <button
+            onClick={() => loadDashboardData()}
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors mr-2"
+          >
+            Try Again
+          </button>
+          <button
+            onClick={() => {
+              localStorage.removeItem("token");
+              router.push("/auth");
+            }}
+            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            Re-login
+          </button>
+        </motion.div>
       </div>
     );
   }
 
   const mainContentMl = isSidebarExpanded ? "ml-64" : "ml-16";
-  const mainContentWidth = "";
 
   return (
     <div className="min-h-screen bg-gray-50 text-slate-900 flex relative">
@@ -423,7 +470,7 @@ const MarklyDashboard = () => {
         setActivePanel={setActivePanel}
         categories={categoriesForDisplay}
         collections={collectionsForDisplay}
-        tags={tags}
+        tags={tags || []}
         onCategorySelect={setSelectedCategoryId}
         selectedCategoryId={selectedCategoryId}
         onCollectionSelect={setSelectedCollectionId}
@@ -449,13 +496,13 @@ const MarklyDashboard = () => {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           onAddBookmarkClick={() => setIsAddBookmarkModalOpen(true)}
-          totalBookmarksCount={userBookmarks.length}
+          totalBookmarksCount={(userBookmarks || []).length}
         />
 
         {activePanel === "dashboard" && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
             <motion.div className="bg-gradient-to-br from-pink-50 to-pink-100 p-6 rounded-2xl text-center" whileHover={{ scale: 1.05 }}>
-              <div className="text-3xl font-bold text-pink-600 mb-2">{userBookmarks.length}</div>
+              <div className="text-3xl font-bold text-pink-600 mb-2">{(userBookmarks || []).length}</div>
               <div className="text-sm font-medium text-slate-700">Total Bookmarks</div>
             </motion.div>
             <motion.div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-2xl text-center" whileHover={{ scale: 1.05 }}>
@@ -467,7 +514,7 @@ const MarklyDashboard = () => {
               <div className="text-sm font-medium text-slate-700">Collections</div>
             </motion.div>
             <motion.div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-2xl text-center" whileHover={{ scale: 1.05 }}>
-              <div className="text-3xl font-bold text-green-600 mb-2">{tags.length}</div>
+              <div className="text-3xl font-bold text-green-600 mb-2">{(tags || []).length}</div>
               <div className="text-sm font-medium text-slate-700">Tags</div>
             </motion.div>
           </div>
@@ -483,8 +530,8 @@ const MarklyDashboard = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
             >
-              {tags
-                .sort((a, b) => b.weeklyCount - a.weeklyCount)
+              {(tags || [])
+                .sort((a, b) => (b.weeklyCount || 0) - (a.weeklyCount || 0))
                 .slice(0, 6)
                 .map((tag) => (
                   <motion.div
@@ -493,10 +540,10 @@ const MarklyDashboard = () => {
                     whileHover={{ scale: 1.05 }}
                   >
                     <div className="text-3xl font-bold text-purple-600">#{tag.name}</div>
-                    <div className="text-sm text-slate-600">{tag.weeklyCount} mentions</div>
+                    <div className="text-sm text-slate-600">{tag.weeklyCount || 0} mentions</div>
                   </motion.div>
                 ))}
-              {tags.length === 0 && (
+              {(tags || []).length === 0 && (
                 <p className="col-span-full text-center text-slate-600">No trending tags this week.</p>
               )}
             </motion.div>
@@ -513,44 +560,27 @@ const MarklyDashboard = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
             >
-              {userBookmarks
+              {(userBookmarks || [])
                 .slice(0, 6)
                 .map((bookmark) => (
-                  <motion.div
+                  <BookmarkCard
                     key={bookmark.id}
-                    className="bg-white border border-green-100 rounded-2xl shadow-md p-5 flex flex-col justify-between cursor-pointer"
-                    whileHover={{ scale: 1.05 }}
-                    onClick={() => router.push(`/app/bookmarks/${bookmark.id}`)}
-                  >
-                    <h3 className="text-lg font-semibold text-black mb-2 line-clamp-1">{bookmark.title}</h3>
-                    <p className="text-slate-600 text-sm line-clamp-2 mb-3">{bookmark.summary}</p>
-                    <a
-                      href={bookmark.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()} /* Prevent card click from triggering when clicking URL */
-                      className="text-purple-600 hover:underline text-xs truncate"
-                    >
-                      {bookmark.url}
-                    </a>
-                    <div className="text-xs text-slate-500 mt-3 flex items-center justify-between">
-                      <span>{new Date(bookmark.datetime).toLocaleDateString()}</span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleToggleFavorite(bookmark.id);
-                        }}
-                        className="p-1 rounded-full hover:bg-yellow-100 transition-colors"
-                      >
-                        <Star
-                          className={`w-5 h-5 ${bookmark.isFav ? "text-yellow-500 fill-current" : "text-slate-400"}`}
-                        />
-                      </button>
-                    </div>
-                  </motion.div>
+                    bookmark={bookmark}
+                    onToggleFavorite={handleToggleFavorite}
+                  />
                 ))}
-              {userBookmarks.length === 0 && (
-                <p className="col-span-full text-center text-slate-600">No recent bookmarks to display.</p>
+              {(userBookmarks || []).length === 0 && (
+                <div className="col-span-full text-center text-slate-600 py-16">
+                  <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                  <p className="text-xl font-semibold mb-2">No bookmarks yet</p>
+                  <p className="mb-4">Get started by adding your first bookmark!</p>
+                  <button
+                    onClick={() => setIsAddBookmarkModalOpen(true)}
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition-all"
+                  >
+                    Add Your First Bookmark
+                  </button>
+                </div>
               )}
             </motion.div>
           </div>
@@ -562,12 +592,13 @@ const MarklyDashboard = () => {
       <AddBookmarkModal
         isOpen={isAddBookmarkModalOpen}
         onClose={() => setIsAddBookmarkModalOpen(false)}
-        onAddBookmark={handleAddBookmark}
+        onAddBookmark={({ url, title, summary, tags, collections, category }) =>
+          handleAddBookmark({ url, title, summary, tag_ids: tags, collection_ids: collections, category_id: category})}
         isLoading={addBookmarkLoading}
         error={addBookmarkError}
-        categories={categories}
-        collections={collections}
-        tags={tags}
+        categories={categories || []}
+        collections={collections || []}
+        tags={tags || []}
         onAddNewTag={handleAddNewTag}
       />
 
