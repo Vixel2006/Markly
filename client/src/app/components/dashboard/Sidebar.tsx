@@ -1,165 +1,235 @@
-"use client";
-
 import React from 'react';
-import Link from "next/link";
-import { usePathname } from 'next/navigation';
-import { BookOpen, Globe, Star, Clock, Zap, Folder, User, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
+import { BookOpen, Zap, Search, Star, Globe, Folder, TrendingUp, X, Menu, Plus } from 'lucide-react'; // Ensure all icons are imported
 
-interface Category {
+// Define more precise interfaces if you have them in MarklyDashboard
+interface CategoryForDisplay {
   id: string;
   name: string;
+  emoji?: string;
   count: number;
   icon: string;
   color: string;
 }
 
+interface CollectionForDisplay {
+  id: string;
+  name: string;
+  count: number;
+}
+
+interface Tag { // Assuming a simpler Tag interface here for sidebar display
+  id: string;
+  name: string;
+  weeklyCount: number; // Keep consistent with MarklyDashboard
+}
+
 interface SidebarProps {
   isExpanded: boolean;
   onToggle: () => void;
-  categories: Category[];
-  onCategorySelect: (categoryId: string | null) => void;
+  activePanel: 'dashboard' | 'bookmarks' | 'collections' | 'tags' | 'favorites' | 'ai-suggested';
+  setActivePanel: (panel: 'dashboard' | 'bookmarks' | 'collections' | 'tags' | 'favorites' | 'ai-suggested') => void;
+  categories: CategoryForDisplay[];
+  collections: CollectionForDisplay[];
+  tags: Tag[];
+  onCategorySelect: (id: string | null) => void;
   selectedCategoryId: string | null;
+  onCollectionSelect: (id: string | null) => void;
+  selectedCollectionId: string | null;
+  onTagSelect: (id: string | null) => void;
+  selectedTagId: string | null;
+  onClearFilters: () => void;
+  onAddCategoryClick: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
   isExpanded,
   onToggle,
+  activePanel,
+  setActivePanel,
   categories,
+  collections,
+  tags,
   onCategorySelect,
   selectedCategoryId,
+  onCollectionSelect,
+  selectedCollectionId,
+  onTagSelect,
+  selectedTagId,
+  onClearFilters,
+  onAddCategoryClick,
 }) => {
-  const pathname = usePathname();
+  const NavItem = ({ icon, label, panelName, isFilter = false, count = 0, isSelected = false, onClick }: any) => {
+    const activeBg = isSelected ? 'bg-purple-100 text-purple-700' : (activePanel === panelName && !isFilter ? 'bg-purple-100 text-purple-700' : '');
+    const hoverBg = isSelected ? 'hover:bg-purple-200' : 'hover:bg-green-50';
+    const textColor = isSelected ? 'text-purple-700' : 'text-slate-700';
 
-  const navItems = [
-    { icon: Globe, label: 'All Bookmarks', path: '/app', isFilter: true, filterId: null },
-    { icon: Star, label: 'Favorites', path: '/app/favorites', isFilter: false },
-    { icon: Clock, label: 'Recent', path: '/app/recent', isFilter: false },
-    { icon: Zap, label: 'AI Suggested', path: '/app/ai-suggested', isFilter: false },
-    { icon: Folder, label: 'Collections', path: '/app/collections', isFilter: false },
-  ];
-
-  const bottomItems = [
-    { icon: User, label: 'Profile', path: '/app/profile' },
-    { icon: Settings, label: 'Settings', path: '/app/settings' },
-  ];
-
-  const totalCategoriesCount = categories.reduce((acc, cat) => acc + cat.count, 0);
+    return (
+      <button
+        onClick={onClick}
+        className={`flex items-center w-full p-3 rounded-md transition-colors duration-200
+                    ${activeBg} ${hoverBg} ${textColor}
+                    ${isExpanded ? '' : 'justify-center'}
+                  `}
+        aria-label={label}
+      >
+        {icon}
+        {isExpanded && <span className={`font-medium ${isExpanded ? 'ml-3' : ''}`}>{label}</span>}
+        {isExpanded && count > 0 && <span className="ml-auto text-xs font-semibold px-2 py-1 bg-green-100 rounded-full text-green-700">{count}</span>}
+      </button>
+    );
+  };
 
   return (
-    <div
-      className={`fixed left-0 top-0 h-full transition-all duration-300 bg-slate-800 border-r border-slate-700 p-4 z-50
-        flex flex-col
-        ${isExpanded ? 'w-64' : 'w-16'}
-        // Scrollbar styling classes
-        overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-800 hover:scrollbar-thumb-slate-600
-      `}
-    >
-      {isExpanded ? (
-        <div className="flex items-center justify-between mb-8">
-          <Link href="/app" className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
-              <BookOpen className="w-5 h-5" />
-            </div>
-            <h1 className="text-xl font-bold">Markly</h1>
-          </Link>
-          <button
-            onClick={onToggle}
-            className="text-slate-400 hover:text-white transition-colors p-1 rounded"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
+    <div className={`fixed inset-y-0 left-0 bg-white border-r border-green-100 shadow-xl transition-all duration-300 z-40
+                     ${isExpanded ? 'w-64' : 'w-16'}
+                     flex flex-col`}>
+      {/* Sidebar Header/Logo */}
+      <div className="flex items-center p-4 h-16 border-b border-green-100">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-purple-500 rounded-full flex items-center justify-center shadow-md">
+            <BookOpen className="w-5 h-5 text-white" />
+          </div>
+          {isExpanded && <span className="text-xl font-bold text-black">Markly</span>}
         </div>
-      ) : (
-        <div className="flex flex-col items-center pt-2">
-          <button
-            onClick={onToggle}
-            className="text-slate-400 hover:text-white transition-colors py-2 px-3 rounded-lg"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-          <Link href="/app" className="flex items-center justify-center mt-4">
-            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
-              <BookOpen className="w-5 h-5" />
-            </div>
-          </Link>
-          <div className="mb-8"></div>
-        </div>
-      )}
+        <button
+          onClick={onToggle}
+          className={`ml-auto text-slate-500 hover:text-black transition-colors md:block hidden ${isExpanded ? '' : 'absolute right-0 translate-x-1/2 bg-white border border-green-100 rounded-full p-1 shadow-md'}`}
+          aria-label={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+        >
+          {isExpanded ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </div>
 
-      <nav className="space-y-2 flex-grow">
-        {navItems.map((item, index) => (
-          <Link
-            key={index}
-            href={item.path}
-            onClick={() => {
-              if (item.isFilter) {
-                onCategorySelect(item.filterId);
-              }
-            }}
-            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-              (item.isFilter && item.filterId === selectedCategoryId) ||
-              (!item.isFilter && pathname === item.path)
-                ? 'bg-slate-700 text-blue-400'
-                : 'hover:bg-slate-700'
-            } ${!isExpanded && 'justify-center'}`}
-          >
-            <item.icon className="w-5 h-5 flex-shrink-0" />
-            {isExpanded && <span>{item.label}</span>}
-          </Link>
-        ))}
+      {/* Main Navigation */}
+      <nav className="flex-1 mt-8 space-y-2 px-4 overflow-y-auto custom-scrollbar">
+        <NavItem
+          icon={<Zap size={20} />}
+          label="Dashboard"
+          panelName="dashboard"
+          isSelected={activePanel === 'dashboard'}
+          onClick={() => { setActivePanel('dashboard'); onClearFilters(); }}
+        />
+        <NavItem
+          icon={<BookOpen size={20} />}
+          label="All Bookmarks"
+          panelName="bookmarks"
+          isSelected={activePanel === 'bookmarks' && !selectedCategoryId && !selectedCollectionId && !selectedTagId}
+          onClick={() => { setActivePanel('bookmarks'); onClearFilters(); }}
+        />
+        <NavItem
+          icon={<Folder size={20} />}
+          label="Collections"
+          panelName="collections"
+          isSelected={activePanel === 'collections'}
+          onClick={() => {
+            setActivePanel('collections');
+            onCollectionSelect(null); // Clear specific collection view if navigating from filter or another panel
+            onClearFilters(); // Clear other filters
+          }}
+        />
+        <NavItem
+          icon={<Star size={20} />}
+          label="Favorites"
+          panelName="favorites"
+          isSelected={activePanel === 'favorites'}
+          onClick={() => { setActivePanel('favorites'); onClearFilters(); }}
+        />
+        {/* You can add 'AI Suggested' or 'Tags' as top-level if needed */}
+
+        {isExpanded && (
+          <>
+            <div className="px-3 pt-6 pb-2 text-xs font-semibold uppercase text-slate-500">
+              Filters
+            </div>
+
+            {/* Categories Filter */}
+            <div className="mt-4 px-3">
+              <h3 className="text-sm font-semibold text-black mb-2">Categories</h3>
+              <ul className="space-y-1">
+                {categories.map((cat) => (
+                  <li key={cat.id}>
+                    <NavItem
+                      icon={<span className={`w-2.5 h-2.5 rounded-full mr-2 ${cat.color}`}></span>}
+                      label={cat.name}
+                      panelName="bookmarks" // Filters always show in bookmark feed
+                      isFilter={true}
+                      count={cat.count}
+                      isSelected={selectedCategoryId === cat.id}
+                      onClick={() => {
+                        onCategorySelect(cat.id);
+                        setActivePanel('bookmarks');
+                        onCollectionSelect(null);
+                        onTagSelect(null);
+                      }}
+                    />
+                  </li>
+                ))}
+                <li>
+                  <button
+                    onClick={onAddCategoryClick}
+                    className="flex items-center w-full p-2 rounded-md text-purple-600 hover:bg-green-50 hover:text-purple-700 transition-colors duration-200"
+                  >
+                    <Plus size={16} className="mr-2" /> Add Category
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Tags Filter */}
+            <div className="mt-4 px-3">
+              <h3 className="text-sm font-semibold text-black mb-2">Tags</h3>
+              <ul className="space-y-1">
+                {tags.map((tag) => (
+                  <li key={tag.id}>
+                    <NavItem
+                      icon={<span className="text-xs text-purple-500 mr-2">#</span>}
+                      label={tag.name}
+                      panelName="bookmarks"
+                      isFilter={true}
+                      count={tag.weeklyCount}
+                      isSelected={selectedTagId === tag.id}
+                      onClick={() => {
+                        onTagSelect(tag.id);
+                        setActivePanel('bookmarks');
+                        onCategorySelect(null);
+                        onCollectionSelect(null);
+                      }}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Clear All Filters button */}
+            {(selectedCategoryId || selectedCollectionId || selectedTagId || (activePanel === 'bookmarks' && searchQuery)) && (
+              <div className="mt-6 px-3">
+                <button
+                  onClick={onClearFilters}
+                  className="flex items-center w-full p-2 rounded-md text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors duration-200"
+                >
+                  <X size={16} className="mr-2" /> Clear All Filters
+                </button>
+              </div>
+            )}
+          </>
+        )}
       </nav>
 
+      {/* Sidebar Footer/Profile */}
       {isExpanded && (
-        <div className="mt-8">
-          <h3 className="text-sm font-medium text-slate-400 mb-3">Categories</h3>
-          <div className="space-y-1">
-            <div
-              onClick={() => onCategorySelect(null)}
-              className={`flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-700 cursor-pointer transition-colors ${
-                selectedCategoryId === null ? 'bg-slate-700 text-blue-400' : ''
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-sm">📁</span>
-                <span className="text-sm">All Categories</span>
-              </div>
-              <span className="text-xs text-slate-400">{totalCategoriesCount}</span>
-            </div>
-            {categories.map((category) => (
-              <div
-                key={category.id}
-                onClick={() => onCategorySelect(category.id)}
-                className={`flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-700 cursor-pointer transition-colors ${
-                  selectedCategoryId === category.id ? 'bg-slate-700 text-blue-400' : ''
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">{category.icon}</span>
-                  <span className="text-sm">{category.name}</span>
-                </div>
-                <span className="text-xs text-slate-400">{category.count}</span>
-              </div>
-            ))}
+        <div className="mt-auto p-4 border-t border-green-100 flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-green-300 to-blue-300 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
+            JD
+          </div>
+          <div>
+            <div className="font-semibold text-black">John Doe</div>
+            <div className="text-sm text-slate-600">Free Plan</div>
           </div>
         </div>
       )}
-
-      <div className={`mt-auto space-y-2 pb-4 ${!isExpanded && 'flex flex-col items-center gap-2 pt-4'}`}>
-        {bottomItems.map((item, index) => (
-          <Link
-            key={index}
-            href={item.path}
-            className={`flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-700 cursor-pointer transition-colors ${
-              !isExpanded && 'justify-center px-0'
-            } ${pathname === item.path ? 'bg-slate-700 text-blue-400' : ''}`}
-          >
-            <item.icon className="w-5 h-5 flex-shrink-0" />
-            {isExpanded && <span className="text-sm">{item.label}</span>}
-          </Link>
-        ))}
-      </div>
     </div>
   );
 };
 
 export default Sidebar;
+

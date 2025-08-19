@@ -8,9 +8,9 @@ interface PasswordStrengthIndicatorProps {
 const PasswordStrengthIndicator: React.FC<PasswordStrengthIndicatorProps> = ({ password }) => {
   const getStrength = (pass: string) => {
     if (pass.length === 0) return { strength: 0, label: '', color: '' };
-    if (pass.length < 6) return { strength: 1, label: 'Weak', color: 'text-red-400' };
-    if (pass.length < 10) return { strength: 2, label: 'Medium', color: 'text-yellow-400' };
-    return { strength: 3, label: 'Strong', color: 'text-green-400' };
+    if (pass.length < 6) return { strength: 1, label: 'Weak', color: 'text-red-500' };
+    if (pass.length < 10) return { strength: 2, label: 'Medium', color: 'text-yellow-500' };
+    return { strength: 3, label: 'Strong', color: 'text-green-500' };
   };
 
   const strength = getStrength(password);
@@ -18,7 +18,7 @@ const PasswordStrengthIndicator: React.FC<PasswordStrengthIndicatorProps> = ({ p
   return (
     <div className="mt-2">
       <div className="flex items-center gap-2">
-        <div className="flex-1 bg-slate-700 rounded-full h-1">
+        <div className="flex-1 bg-green-100 rounded-full h-1">
           <div
             className={`h-1 rounded-full transition-all duration-300 ${
               strength.strength === 1 ? 'w-1/3 bg-red-500' :
@@ -27,7 +27,7 @@ const PasswordStrengthIndicator: React.FC<PasswordStrengthIndicatorProps> = ({ p
             }`}
           />
         </div>
-        <span className={`text-xs ${strength.color}`}>{strength.label}</span>
+        <span className={`text-xs font-semibold ${strength.color}`}>{strength.label}</span>
       </div>
     </div>
   );

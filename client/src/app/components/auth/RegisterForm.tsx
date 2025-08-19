@@ -1,13 +1,12 @@
-// components/auth/RegisterForm.tsx
 "use client";
 
 import React, { useState } from 'react';
-import { BookOpen, ArrowRight, AlertCircle, Check, Mail, Lock, User } from 'lucide-react';
+import { ArrowRight, Check, Mail, Lock, User } from 'lucide-react'; // Removed BookOpen
 import { useRouter } from 'next/navigation';
 import TextInput from './TextInput';
 import PasswordInput from './PasswordInput';
 import SocialButtons from './SocialButtons';
-import PasswordStrengthIndicator from './PasswordStrengthIndicator';
+import PasswordStrengthIndicator from './PasswordStrengthIndicator'; // Assuming this exists and is styled
 
 interface RegisterFormProps {
   onSwitchToSignIn: () => void;
@@ -32,7 +31,6 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToSignIn }) => {
       ...prev,
       [name]: value,
     }));
-
     if (errors[name]) {
       setErrors((prev) => ({
         ...prev,
@@ -45,21 +43,18 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToSignIn }) => {
     const newErrors: { [key: string]: string } = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = 'Full name is required';
     }
-
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
+      newErrors.email = 'Please enter a valid email address';
     }
-
     if (!formData.password) {
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 8) {
       newErrors.password = 'Password must be at least 8 characters';
     }
-
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = 'Please confirm your password';
     } else if (formData.password !== formData.confirmPassword) {
@@ -90,47 +85,47 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToSignIn }) => {
           email: formData.email,
           password: formData.password,
         }),
-        credentials: "include", // make sure spelling is correct
+        credentials: "include",
       });
 
       if (!res.ok) {
         const errorText = await res.text();
-        alert(errorText || "Registration failed");
+        setErrors({ general: errorText || "Registration failed." });
         return;
       }
 
-      // If registration succeeded, redirect to sign-in
-      router.push('/auth?form=sign-in');
-    } catch (err) {
+      // If registration succeeded, redirect to sign-in page, assuming a successful registration means you want them to sign in
+      router.push('/auth?form=signin');
+    } catch (err: any) {
       console.error("Network error:", err);
-      alert("Something went wrong. Please try again.");
+      setErrors({ general: err.message || "Something went wrong. Please try again." });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="w-full max-w-md mx-auto">
+    <div className="w-full">
       <div className="text-center mb-8">
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-            <BookOpen className="w-7 h-7" />
-          </div>
-          <span className="text-2xl font-bold">Markly</span>
-        </div>
-        <h1 className="text-3xl font-bold mb-2">Create your account</h1>
-        <p className="text-slate-400">Start organizing your bookmarks with AI</p>
+        <h1 className="text-3xl font-bold text-black mb-2">Create your account</h1>
+        <p className="text-slate-600">Start organizing your bookmarks with AI</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {errors.general && (
+          <div className="bg-red-50 text-red-700 p-3 rounded-lg flex items-center gap-2">
+            <Lock className="w-5 h-5" />
+            <p className="text-sm">{errors.general}</p>
+          </div>
+        )}
         <TextInput
           label="Full Name"
           name="name"
           value={formData.name}
           onChange={handleInputChange}
           error={errors.name}
-          placeholder="Enter your full name"
-          icon={<User className="w-5 h-5" />}
+          placeholder="John Doe"
+          icon={<User className="w-5 h-5 text-slate-500" />}
           type="text"
         />
 
@@ -140,8 +135,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToSignIn }) => {
           value={formData.email}
           onChange={handleInputChange}
           error={errors.email}
-          placeholder="Enter your email"
-          icon={<Mail className="w-5 h-5" />}
+          placeholder="your@email.com"
+          icon={<Mail className="w-5 h-5 text-slate-500" />}
           type="email"
         />
 
@@ -151,9 +146,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToSignIn }) => {
           value={formData.password}
           onChange={handleInputChange}
           error={errors.password}
-          placeholder="Create a password"
+          placeholder="Create a strong password"
           showPassword={showPassword}
           toggleShowPassword={() => setShowPassword(!showPassword)}
+          icon={<Lock className="w-5 h-5 text-slate-500" />}
         />
         {formData.password && <PasswordStrengthIndicator password={formData.password} />}
 
@@ -163,25 +159,30 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToSignIn }) => {
           value={formData.confirmPassword}
           onChange={handleInputChange}
           error={errors.confirmPassword}
-          placeholder="Confirm your password"
+          placeholder="Re-enter your password"
           showPassword={showConfirmPassword}
           toggleShowPassword={() => setShowConfirmPassword(!showConfirmPassword)}
+          icon={<Lock className="w-5 h-5 text-slate-500" />}
         />
-        {formData.confirmPassword && formData.password === formData.confirmPassword && (
-          <div className="flex items-center gap-2 mt-2 text-green-400 text-sm">
+        {formData.confirmPassword && formData.password === formData.confirmPassword && !errors.confirmPassword && (
+          <div className="flex items-center gap-2 mt-2 text-green-600 text-sm">
             <Check className="w-4 h-4" />
-            Passwords match
+            Passwords match!
           </div>
         )}
 
         <div>
-          <label className="flex items-start gap-3">
-            <input type="checkbox" className="mt-1 rounded bg-slate-800 border-slate-700 text-blue-500 focus:ring-blue-500/50" required />
-            <span className="text-sm text-slate-400">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-1 rounded bg-green-100 border-green-200 text-purple-600 focus:ring-purple-600/50 focus:ring-2"
+              required
+            />
+            <span className="text-sm text-slate-600">
               I agree to the{' '}
-              <a href="#" className="text-blue-400 hover:text-blue-300 transition-colors">Terms of Service</a>
+              <a href="#" className="text-purple-600 hover:text-purple-700 font-medium transition-colors">Terms of Service</a>
               {' '}and{' '}
-              <a href="#" className="text-blue-400 hover:text-blue-300 transition-colors">Privacy Policy</a>
+              <a href="#" className="text-purple-600 hover:text-purple-700 font-medium transition-colors">Privacy Policy</a>
             </span>
           </label>
         </div>
@@ -189,10 +190,13 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToSignIn }) => {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-slate-600 disabled:to-slate-600 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600
+                     disabled:from-slate-300 disabled:to-slate-400 disabled:text-slate-600
+                     py-3 rounded-xl font-semibold text-white transition-all transform hover:scale-[1.02] disabled:scale-100 disabled:cursor-not-allowed
+                     flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
         >
           {isLoading ? (
-            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
           ) : (
             <>
               Create Account
@@ -201,23 +205,23 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToSignIn }) => {
           )}
         </button>
 
-        <div className="relative">
+        <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-700"></div>
+            <div className="w-full border-t border-green-100"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="bg-slate-900 px-4 text-slate-400">Or sign up with</span>
+            <span className="bg-white/80 px-4 text-slate-600">Or sign up with</span>
           </div>
         </div>
 
-        <SocialButtons />
+        <SocialButtons /> {/* Assuming this component is styled internally */}
 
-        <p className="text-center text-slate-400">
+        <p className="text-center text-slate-600 mt-6">
           Already have an account?{' '}
           <button
             type="button"
             onClick={onSwitchToSignIn}
-            className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
+            className="text-purple-600 hover:text-purple-700 font-semibold transition-colors"
           >
             Sign in
           </button>

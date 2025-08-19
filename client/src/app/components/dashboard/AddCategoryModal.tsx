@@ -1,3 +1,5 @@
+// src/app/components/dashboard/AddCategoryModal.tsx
+// (No changes needed from your original code, it's already well-structured for its purpose)
 "use client";
 
 import React, { useState } from 'react';
@@ -34,7 +36,7 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[100]">
-      <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 w-full max-w-md relative">
+      <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 w-full max-w-md relative shadow-2xl">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
@@ -81,10 +83,14 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
 
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             disabled={isLoading || !categoryName.trim()}
           >
-            {isLoading ? 'Adding...' : 'Add Category'}
+            {isLoading ? (
+                <>
+                    <Loader2 className="w-5 h-5 animate-spin" /> Adding...
+                </>
+            ) : 'Add Category'}
           </button>
         </form>
       </div>

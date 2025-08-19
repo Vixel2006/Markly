@@ -1,19 +1,14 @@
-// pages/MarklyDashboard.tsx
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { BookOpen, Plus, X, Folder } from 'lucide-react';
+import { BookOpen, Plus, X } from 'lucide-react';
 
-import Header from '../components/dashboard/Header';
-import Sidebar from '../components/dashboard/Sidebar';
-import DashboardOverview from '../components/dashboard/DashboardOverview';
-import BookmarkFeed from '../components/dashboard/BookmarkFeed';
-import BookmarkDetailPanel from '../components/dashboard/BookmarkDetailPanel';
-import AddBookmarkModal from '../components/dashboard/AddBookmarkModal';
-import AddCategoryModal from '../components/dashboard/AddCategoryModal';
-import AddCollectionModal from '../components/dashboard/AddCollectionModal';
-import CollectionsPanel from '../components/dashboard/CollectionsPanel';
-import CollectionBookmarksPage from '../components/dashboard/CollectionBookmarksPage';
+import Header from '../../components/dashboard/Header';
+import Sidebar from '../../components/dashboard/Sidebar';
+import BookmarkFeed from '../../components/dashboard/BookmarkFeed';
+import BookmarkDetailPanel from '../../components/dashboard/BookmarkDetailPanel';
+import AddBookmarkModal from '../../components/dashboard/AddBookmarkModal';
+import AddCategoryModal from '../../components/dashboard/AddCategoryModal';
 
 interface Category {
   id: string;
@@ -36,13 +31,16 @@ interface CollectionForDisplay extends Collection {
   count: number;
 }
 
-
 interface Tag {
   id: string;
   name: string;
   weeklyCount: number;
   prevCount: number;
   createdAt: string;
+}
+
+interface TagForDisplay extends Tag {
+  count: number;
 }
 
 interface Bookmark {
@@ -59,9 +57,9 @@ interface Bookmark {
   thumbnail?: string;
 }
 
-const MarklyDashboard = () => {
+const AllBookmarks = () => {
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
-  const [activePanel, setActivePanel] = useState<'dashboard' | 'bookmarks' | 'collections' | 'tags' | 'favorites' | 'ai-suggested'>('dashboard');
+  const [activePanel, setActivePanel] = useState<'dashboard' | 'bookmarks' | 'collections' | 'tags' | 'favorites' | 'ai-suggested'>('bookmarks');
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -75,30 +73,25 @@ const MarklyDashboard = () => {
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [selectedBookmarkId, setSelectedBookmarkId] = useState<string | null>(null);
 
-  const [viewingCollectionId, setViewingCollectionId] = useState<string | null>(null);
-
-
   const [isAddBookmarkModalOpen, setIsAddBookmarkModalOpen] = useState(false);
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
-  const [isAddCollectionModalOpen, setIsAddCollectionModalOpen] = useState(false);
-
   const [addCategoryLoading, setAddCategoryLoading] = useState(false);
   const [addCategoryError, setAddCategoryError] = useState<string | null>(null);
   const [addBookmarkLoading, setAddBookmarkLoading] = useState(false);
   const [addBookmarkError, setAddBookmarkError] = useState<string | null>(null);
-  const [addCollectionLoading, setAddCollectionLoading] = useState(false);
-  const [addCollectionError, setAddCollectionError] = useState<string | null>(null);
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const handleAddNewTag = async (tagName: string): Promise<Tag | null> => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`http://localhost:8080/api/tags`, {
+      const response = await fetch('http://localhost:8080/api/tags', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `${localStorage.getItem("token")}`,
+          'Authorization': 'Bearer YOUR_JWT_TOKEN',
         },
         body: JSON.stringify({ name: tagName }),
       });
@@ -108,7 +101,7 @@ const MarklyDashboard = () => {
         throw new Error(errData.message || `Failed to add tag: ${response.statusText}`);
       }
       const newTag: Tag = await response.json();
-      setTags(prevTags => [...prevTags, newTag]);
+      setTags((prevTags) => [...prevTags, newTag]);
       return newTag;
     } catch (err: any) {
       console.error("Error adding new tag:", err);
@@ -124,7 +117,6 @@ const MarklyDashboard = () => {
     if (!token) {
       console.warn("No token found. User might not be authenticated.");
       setError("Authentication token missing. Please log in.");
-      // router.push("/login");
       return null;
     }
 
@@ -163,10 +155,7 @@ const MarklyDashboard = () => {
     }
   }, []);
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const loadDashboardData = useCallback(async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -182,23 +171,21 @@ const MarklyDashboard = () => {
       if (fetchedTags) setTags(fetchedTags.map(tag => ({
         id: tag.id,
         name: tag.name,
-        weeklyCount: (tag as any).weekly_count || tag.weeklyCount,
-        prevCount: (tag as any).prev_count || tag.prevCount,
-        createdAt: (tag as any).created_at || tag.createdAt,
+        weeklyCount: tag.weeklyCount || 0, // Adjust field names if needed
+        prevCount: tag.prevCount || 0,
+        createdAt: tag.createdAt || new Date().toISOString(),
       })));
       if (fetchedBookmarks) setUserBookmarks(fetchedBookmarks);
-
     } catch (err: any) {
-      setError(err.message || "An unexpected error occurred loading dashboard data.");
+      setError(err.message || "An unexpected error occurred loading data.");
     } finally {
       setLoading(false);
     }
   }, [fetchData]);
 
   useEffect(() => {
-    loadDashboardData();
-  }, [loadDashboardData]);
-
+    loadData();
+  }, [loadData]);
 
   const handleAddCategory = useCallback(async (name: string, emoji: string) => {
     setAddCategoryLoading(true);
@@ -210,7 +197,7 @@ const MarklyDashboard = () => {
         { name, emoji }
       );
       if (newCategory) {
-        await loadDashboardData();
+        loadData();
         setIsAddCategoryModalOpen(false);
       }
     } catch (err: any) {
@@ -218,29 +205,7 @@ const MarklyDashboard = () => {
     } finally {
       setAddCategoryLoading(false);
     }
-  }, [fetchData, loadDashboardData]);
-
-  const handleAddCollection = useCallback(async (name: string) => {
-    setAddCollectionLoading(true);
-    setAddCollectionError(null);
-    try {
-      const newCollection = await fetchData<Collection>(
-        "http://localhost:8080/api/collections",
-        "POST",
-        { name }
-      );
-      if (newCollection) {
-        setCollections(prev => [...prev, newCollection]);
-        await loadDashboardData();
-        setIsAddCollectionModalOpen(false);
-      }
-    } catch (err: any) {
-      setAddCollectionError(err.message || "Failed to add collection.");
-    } finally {
-      setAddCollectionLoading(false);
-    }
-  }, [fetchData, loadDashboardData]);
-
+  }, [fetchData, loadData]);
 
   const handleAddBookmark = useCallback(async (bookmarkData: Omit<Bookmark, 'id' | 'userId' | 'datetime'>) => {
     setAddBookmarkLoading(true);
@@ -254,78 +219,30 @@ const MarklyDashboard = () => {
       if (newBookmark) {
         setUserBookmarks(prev => [newBookmark, ...prev]);
         setIsAddBookmarkModalOpen(false);
-        await loadDashboardData();
       }
     } catch (err: any) {
       setAddBookmarkError(err.message || "Failed to add bookmark.");
     } finally {
       setAddBookmarkLoading(false);
     }
-  }, [fetchData, loadDashboardData]);
+  }, [fetchData]);
 
   const handleUpdateBookmark = useCallback(async (bookmarkId: string, updates: Partial<Bookmark>) => {
-    try {
-      const updatedBm = await fetchData<Bookmark>(
-        `http://localhost:8080/api/bookmarks/${bookmarkId}`,
-        "PUT",
-        updates
-      );
-      if (updatedBm) {
-        setUserBookmarks(prev => prev.map(bm => bm.id === bookmarkId ? { ...bm, ...updates } : bm));
-        setSelectedBookmarkId(null);
-        await loadDashboardData();
-      }
-    } catch (err: any) {
-      setError(err.message || "Failed to update bookmark.");
-    }
-  }, [fetchData, loadDashboardData]);
-
-  const handleDeleteBookmark = useCallback(async (bookmarkId: string) => {
-    try {
-      await fetchData(
-        `http://localhost:8080/api/bookmarks/${bookmarkId}`,
-        "DELETE"
-      );
-      setUserBookmarks(prev => prev.filter(bm => bm.id !== bookmarkId));
-      setSelectedBookmarkId(null);
-      await loadDashboardData();
-    } catch (err: any) {
-      setError(err.message || "Failed to delete bookmark.");
-    }
-  }, [fetchData, loadDashboardData]);
-
-  const handleToggleFavorite = useCallback(async (bookmarkId: string) => {
-    const bookmarkToToggle = userBookmarks.find(bm => bm.id === bookmarkId);
-    if (!bookmarkToToggle) return;
-
-    const newFavStatus = !bookmarkToToggle.isFav;
-    try {
-      const updatedBm = await fetchData<Bookmark>(
-        `http://localhost:8080/api/bookmarks/${bookmarkId}`,
-        "PUT",
-        { isFav: newFavStatus }
-      );
-      if (updatedBm) {
-        setUserBookmarks(prev => prev.map(bm =>
-          bm.id === bookmarkId ? { ...bm, isFav: newFavStatus } : bm
-        ));
-      }
-    } catch (err: any) {
-      setError(err.message || "Failed to toggle favorite status.");
-    }
-  }, [userBookmarks, fetchData]);
-
-  const handleViewCollection = useCallback((collectionId: string) => {
-    setActivePanel('collections');
-    setViewingCollectionId(collectionId);
-    setSelectedCollectionId(null);
+    console.log(`Updating bookmark ${bookmarkId} with:`, updates);
+    setUserBookmarks(prev => prev.map(bm => bm.id === bookmarkId ? { ...bm, ...updates } : bm));
     setSelectedBookmarkId(null);
-    setSearchQuery('');
   }, []);
 
-  const handleBackToCollectionsList = useCallback(() => {
-    setViewingCollectionId(null);
-    setActivePanel('collections');
+  const handleDeleteBookmark = useCallback(async (bookmarkId: string) => {
+    console.log(`Deleting bookmark ${bookmarkId}`);
+    setUserBookmarks(prev => prev.filter(bm => bm.id !== bookmarkId));
+    setSelectedBookmarkId(null);
+  }, []);
+
+  const handleToggleFavorite = useCallback((bookmarkId: string) => {
+    setUserBookmarks(prev => prev.map(bm =>
+      bm.id === bookmarkId ? { ...bm, isFav: !bm.isFav } : bm
+    ));
   }, []);
 
   const categoriesForDisplay: CategoryForDisplay[] = useMemo(() => {
@@ -341,7 +258,7 @@ const MarklyDashboard = () => {
         case 'finance': assignedColor = 'bg-yellow-500'; break;
         default: assignedColor = 'bg-gray-500'; break;
       }
-      return { id: cat.id, name: cat.name, count: count, icon: displayIcon, color: assignedColor };
+      return { id: cat.id, name: cat.name, count, icon: displayIcon, color: assignedColor };
     });
   }, [categories, userBookmarks]);
 
@@ -352,6 +269,12 @@ const MarklyDashboard = () => {
     }));
   }, [collections, userBookmarks]);
 
+  const tagsForDisplay: TagForDisplay[] = useMemo(() => {
+    return tags.map(tag => ({
+      ...tag,
+      count: userBookmarks.filter(bm => bm.tags.some(t => t.id === tag.id)).length
+    }));
+  }, [tags, userBookmarks]);
 
   const filteredBookmarks = useMemo(() => {
     let filtered = userBookmarks;
@@ -381,24 +304,22 @@ const MarklyDashboard = () => {
     return filtered.sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime());
   }, [userBookmarks, selectedCategoryId, selectedCollectionId, selectedTagId, searchQuery]);
 
-
   const currentSelectedBookmark = useMemo(() => {
     return selectedBookmarkId ? userBookmarks.find(bm => bm.id === selectedBookmarkId) : null;
   }, [selectedBookmarkId, userBookmarks]);
 
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-green-100 to-purple-50 text-slate-900 flex items-center justify-center">
-        <p className="text-xl font-semibold text-slate-700">Loading your Markly knowledge base...</p>
+      <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
+        <p>Loading your bookmarks...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 text-red-700 flex flex-col items-center justify-center p-4">
-        <p className="text-xl font-bold mb-4">Error Loading Dashboard</p>
+      <div className="min-h-screen bg-slate-900 text-red-500 flex flex-col items-center justify-center p-4">
+        <p className="text-xl font-bold mb-4">Error Loading Bookmarks</p>
         <p className="text-center">{error}</p>
         <p className="text-sm mt-2">Please check your network connection or try again later.</p>
       </div>
@@ -406,12 +327,9 @@ const MarklyDashboard = () => {
   }
 
   const mainContentMl = isSidebarExpanded ? 'ml-64' : 'ml-16';
-  const mainContentWidth = currentSelectedBookmark ? 'lg:pr-96' : '';
-
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-green-100 to-purple-50 text-slate-900 flex relative">
-      {/* Sidebar */}
+    <div className="min-h-screen bg-slate-900 text-white flex relative">
       <Sidebar
         isExpanded={isSidebarExpanded}
         onToggle={() => setIsSidebarExpanded(!isSidebarExpanded)}
@@ -419,7 +337,7 @@ const MarklyDashboard = () => {
         setActivePanel={setActivePanel}
         categories={categoriesForDisplay}
         collections={collectionsForDisplay}
-        tags={tags}
+        tags={tagsForDisplay}
         onCategorySelect={setSelectedCategoryId}
         selectedCategoryId={selectedCategoryId}
         onCollectionSelect={setSelectedCollectionId}
@@ -431,15 +349,13 @@ const MarklyDashboard = () => {
           setSelectedCollectionId(null);
           setSelectedTagId(null);
           setSearchQuery('');
-          setViewingCollectionId(null);
           setActivePanel('bookmarks');
         }}
         onAddCategoryClick={() => setIsAddCategoryModalOpen(true)}
       />
 
-      {/* Main Content Area */}
       <div
-        className={`flex-1 transition-all duration-300 ${mainContentMl} p-4 md:p-6 ${mainContentWidth}`}
+        className={`flex-1 transition-all duration-300 ${mainContentMl} p-4 md:p-6 ${currentSelectedBookmark ? 'lg:pr-96' : ''}`}
       >
         <Header
           searchQuery={searchQuery}
@@ -450,60 +366,22 @@ const MarklyDashboard = () => {
           viewMode={viewMode}
         />
 
-        {activePanel === 'dashboard' && (
-          <DashboardOverview
-            totalBookmarksCount={userBookmarks.length}
-            categories={categoriesForDisplay}
-            collections={collectionsForDisplay}
-            tags={tags}
-            onAddBookmarkClick={() => setIsAddBookmarkModalOpen(true)}
-            onCategorizeAll={() => console.log("AI Categorize All clicked!")}
-          />
-        )}
-
-        {activePanel === 'collections' && (
-          viewingCollectionId ? (
-            <CollectionBookmarksPage
-              selectedCollectionId={viewingCollectionId}
-              collections={collections}
-              bookmarks={userBookmarks}
-              onBack={handleBackToCollectionsList}
-              onBookmarkSelect={setSelectedBookmarkId}
-              selectedBookmarkId={selectedBookmarkId}
-              viewMode={viewMode}
-              onToggleFavorite={handleToggleFavorite}
-              allCategories={categoriesForDisplay}
-              allCollections={collectionsForDisplay}
-              allTags={tags}
-            />
-          ) : (
-            <CollectionsPanel
-              collections={collectionsForDisplay}
-              onAddCollectionClick={() => setIsAddCollectionModalOpen(true)}
-              onCollectionClick={handleViewCollection}
-            />
-          )
-        )}
-
-        {(activePanel === 'bookmarks' || activePanel === 'favorites' || activePanel === 'ai-suggested' || activePanel === 'tags') && (
-          <BookmarkFeed
-            bookmarks={filteredBookmarks}
-            onBookmarkSelect={setSelectedBookmarkId}
-            selectedBookmarkId={selectedBookmarkId}
-            viewMode={viewMode}
-            onToggleFavorite={handleToggleFavorite}
-            selectedCategoryId={selectedCategoryId}
-            selectedCollectionId={selectedCollectionId}
-            selectedTagId={selectedTagId}
-            searchQuery={searchQuery}
-            allCategories={categoriesForDisplay}
-            allCollections={collectionsForDisplay}
-            allTags={tags}
-          />
-        )}
+        <BookmarkFeed
+          bookmarks={filteredBookmarks}
+          onBookmarkSelect={setSelectedBookmarkId}
+          selectedBookmarkId={selectedBookmarkId}
+          viewMode={viewMode}
+          onToggleFavorite={handleToggleFavorite}
+          selectedCategoryId={selectedCategoryId}
+          selectedCollectionId={selectedCollectionId}
+          selectedTagId={selectedTagId}
+          searchQuery={searchQuery}
+          allCategories={categoriesForDisplay}
+          allCollections={collectionsForDisplay}
+          allTags={tags}
+        />
       </div>
 
-      {/* Right Contextual Panel */}
       {currentSelectedBookmark && (
         <BookmarkDetailPanel
           bookmark={currentSelectedBookmark}
@@ -518,7 +396,6 @@ const MarklyDashboard = () => {
         />
       )}
 
-      {/* Modals */}
       <AddBookmarkModal
         isOpen={isAddBookmarkModalOpen}
         onClose={() => setIsAddBookmarkModalOpen(false)}
@@ -538,16 +415,8 @@ const MarklyDashboard = () => {
         isLoading={addCategoryLoading}
         error={addCategoryError}
       />
-
-      <AddCollectionModal
-        isOpen={isAddCollectionModalOpen}
-        onClose={() => setIsAddCollectionModalOpen(false)}
-        onAddCollection={handleAddCollection}
-        isLoading={addCollectionLoading}
-        error={addCollectionError}
-      />
     </div>
   );
 };
 
-export default MarklyDashboard;
+export default AllBookmarks;
