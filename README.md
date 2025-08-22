@@ -25,8 +25,9 @@ Check out a video demonstration of Markly below:
 ### Backend
 
 *   **Go**: Primary language for the backend API.
-*   **Gin Gonic**: Web framework for building the API.
-*   **PostgreSQL**: Database for storing application data.
+*   **Mux**: Web framework for building the API.
+*   **MongoDB**: Database for storing application data.
+*   **Redis**: For caching and fast in-memory data operations.
 *   **Docker**: For containerizing the database.
 
 ### Frontend
