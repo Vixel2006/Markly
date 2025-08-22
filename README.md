@@ -10,6 +10,14 @@ Markly is a full-stack application designed to help users manage and organize th
 *   **Collections**: Group related bookmarks into collections.
 *   **User Authentication**: Secure user accounts for personalized bookmark management.
 
+## Demo
+
+Check out a video demonstration of Markly below:
+
+[![Watch the demo](https://vimeo.com/1112375416?share=copy)
+
+
+
 ## Technologies Used
 
 ### Backend
