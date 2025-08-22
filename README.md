@@ -78,12 +78,6 @@ These instructions will get you a copy of the project up and running on your loc
 
     This will start a PostgreSQL container. Ensure your `.env` file is configured correctly for database connection.
 
-    Run database migrations (if any, this step might need to be added later if not handled by `make run`):
-
-    ```bash
-    # Placeholder for migration command if needed
-    ```
-
 3.  **Frontend Setup:**
 
     Navigate to the client directory:
