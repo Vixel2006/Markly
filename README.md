@@ -14,7 +14,9 @@ Markly is a full-stack application designed to help users manage and organize th
 
 Check out a video demonstration of Markly below:
 
-<iframe src="./demos/demo.mp4" width="640" height="360" frameborder="0" allowfullscreen></iframe>
+[Watch the demo video here](./demos/demo.mp4)
+
+(Right-click and "Save Link As..." or "Download Linked File As..." to download the video.)
 
 
 
