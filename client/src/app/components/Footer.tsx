@@ -1,73 +1,107 @@
-// components/Footer.tsx
+// components/landing/FooterSection.tsx
+"use client";
 import React from 'react';
 import { BookOpen, Twitter, Github, Mail } from 'lucide-react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 
-const Footer = () => {
+const FooterSection = () => { // Renamed for consistency
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2
+      }
+    }
+  };
+
+  const fadeInUpVariant = { // Re-defined for this component's scope
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, delay: 0.5 } }
+  };
+
   return (
-    <footer className="bg-slate-800 py-12 px-6">
+    <motion.footer
+      className="bg-indigo-50 py-12 px-6 border-t border-indigo-100 text-slate-700"
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.2 }}
+      variants={containerVariants}
+    >
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div>
+          <motion.div variants={itemVariants}>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <BookOpen className="w-5 h-5" />
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-md">
+                <BookOpen className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold">Markly</span>
+              <span className="text-xl font-bold text-gray-900">Markly</span>
             </div>
-            <p className="text-slate-400 mb-4">
-              AI-powered bookmark management for the modern web.
+            <p className="text-slate-700 mb-4">
+              Empowering knowledge with AI.
             </p>
             <div className="flex gap-4">
-              <Link href="https://twitter.com" className="cursor-pointer">
-                <Twitter className="w-5 h-5 text-slate-400 hover:text-white" />
+              <Link href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Markly on Twitter">
+                <Twitter className="w-5 h-5 text-slate-600 hover:text-indigo-500 cursor-pointer transition-colors" />
               </Link>
-              <Link href="https://github.com" className="cursor-pointer">
-                <Github className="w-5 h-5 text-slate-400 hover:text-white" />
+              <Link href="https://github.com" target="_blank" rel="noopener noreferrer" aria-label="Markly on GitHub">
+                <Github className="w-5 h-5 text-slate-600 hover:text-indigo-500 cursor-pointer transition-colors" />
               </Link>
-              <Link href="mailto:info@markly.com" className="cursor-pointer">
-                <Mail className="w-5 h-5 text-slate-400 hover:text-white" />
+              <Link href="mailto:info@markly.com" aria-label="Email Markly">
+                <Mail className="w-5 h-5 text-slate-600 hover:text-indigo-500 cursor-pointer transition-colors" />
               </Link>
             </div>
-          </div>
+          </motion.div>
 
-          <div>
-            <h4 className="font-semibold mb-4">Product</h4>
-            <ul className="space-y-2 text-slate-400">
-              <li><Link href="#features" className="hover:text-white transition-colors">Features</Link></li>
-              <li><Link href="#pricing" className="hover:text-white transition-colors">Pricing</Link></li>
-              <li><Link href="/api" className="hover:text-white transition-colors">API</Link></li>
-              <li><Link href="/changelog" className="hover:text-white transition-colors">Changelog</Link></li>
+          <motion.div variants={itemVariants}>
+            <h4 className="font-bold text-gray-900 mb-4">Product</h4>
+            <ul className="space-y-2 text-slate-700">
+              <li><Link href="#features" className="hover:text-indigo-700 transition-colors">Features</Link></li>
+              <li><Link href="#pricing" className="hover:text-indigo-700 transition-colors">Pricing</Link></li>
+              <li><Link href="/api" className="hover:text-indigo-700 transition-colors">API Docs</Link></li>
+              <li><Link href="/changelog" className="hover:text-indigo-700 transition-colors">Changelog</Link></li>
             </ul>
-          </div>
+          </motion.div>
 
-          <div>
-            <h4 className="font-semibold mb-4">Company</h4>
-            <ul className="space-y-2 text-slate-400">
-              <li><Link href="/about" className="hover:text-white transition-colors">About</Link></li>
-              <li><Link href="/blog" className="hover:text-white transition-colors">Blog</Link></li>
-              <li><Link href="/careers" className="hover:text-white transition-colors">Careers</Link></li>
-              <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
+          <motion.div variants={itemVariants}>
+            <h4 className="font-bold text-gray-900 mb-4">Company</h4>
+            <ul className="space-y-2 text-slate-700">
+              <li><Link href="/about" className="hover:text-indigo-700 transition-colors">About Us</Link></li>
+              <li><Link href="/blog" className="hover:text-indigo-700 transition-colors">Blog</Link></li>
+              <li><Link href="/careers" className="hover:text-indigo-700 transition-colors">Careers</Link></li>
+              <li><Link href="/contact" className="hover:text-indigo-700 transition-colors">Contact</Link></li>
             </ul>
-          </div>
+          </motion.div>
 
-          <div>
-            <h4 className="font-semibold mb-4">Support</h4>
-            <ul className="space-y-2 text-slate-400">
-              <li><Link href="/help" className="hover:text-white transition-colors">Help Center</Link></li>
-              <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-              <li><Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
-              <li><Link href="/status" className="hover:text-white transition-colors">Status</Link></li>
+          <motion.div variants={itemVariants}>
+            <h4 className="font-bold text-gray-900 mb-4">Support</h4>
+            <ul className="space-y-2 text-slate-700">
+              <li><Link href="/help" className="hover:text-indigo-700 transition-colors">Help Center</Link></li>
+              <li><Link href="/privacy" className="hover:text-indigo-700 transition-colors">Privacy Policy</Link></li>
+              <li><Link href="/terms" className="hover:text-indigo-700 transition-colors">Terms of Service</Link></li>
+              <li><Link href="/status" className="hover:text-indigo-700 transition-colors">Status</Link></li>
             </ul>
-          </div>
+          </motion.div>
         </div>
 
-        <div className="border-t border-slate-700 mt-8 pt-8 text-center text-slate-400">
-          <p>&copy; 2025 Markly. All rights reserved.</p>
-        </div>
+        <motion.div
+          variants={fadeInUpVariant}
+          initial="hidden"
+          animate="visible"
+          className="border-t border-indigo-100 mt-8 pt-8 text-center text-slate-600"
+        >
+          <p>&copy; {new Date().getFullYear()} Markly Inc. All rights reserved.</p>
+        </motion.div>
       </div>
-    </footer>
+    </motion.footer>
   );
 };
 
-export default Footer;
+export default FooterSection;

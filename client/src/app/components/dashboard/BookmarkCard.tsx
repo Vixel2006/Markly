@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 interface Category {
   id: string;
   name: string;
-  emoji?: string;
+  emoji?: string; // Emoji is an optional property
 }
 
 interface Collection {
@@ -15,7 +15,7 @@ interface Collection {
   name: string;
 }
 
-interface TagType {
+interface TagType { // Renamed from Tag to TagType to avoid conflict with 'lucide-react' Tag component
   id: string;
   name: string;
 }
@@ -25,9 +25,9 @@ interface BookmarkCardData {
   title: string;
   url: string;
   summary: string;
-  categories?: Category[];
-  collections: Collection[];
-  tags: TagType[];
+  categories?: Category[]; // Array of Category objects
+  collections: Collection[]; // Array of Collection objects
+  tags: TagType[]; // Array of TagType objects
   isFav: boolean;
   createdAt: string;
 }
@@ -46,7 +46,7 @@ const BookmarkCard: React.FC<BookmarkCardProps> = ({ bookmark, onToggleFavorite 
       className="bg-white rounded-3xl shadow-lg p-6 flex flex-col justify-between border border-green-100 cursor-pointer"
       whileHover={{ y: -5, boxShadow: "0 10px 20px rgba(0,0,0,0.1)" }}
       transition={{ duration: 0.2 }}
-      onClick={() => router.push(`/app/bookmarks/${bookmark.id}`)}
+      onClick={() => router.push(`/app/bookmarks/${bookmark.id}`)} // Navigate to bookmark details
     >
       <div>
         <h3 className="text-xl font-semibold text-gray-800 mb-2">{bookmark.title}</h3>
@@ -55,7 +55,7 @@ const BookmarkCard: React.FC<BookmarkCardProps> = ({ bookmark, onToggleFavorite 
           target="_blank"
           rel="noopener noreferrer"
           className="text-purple-600 hover:underline text-sm mb-3 block truncate"
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()} // Prevent card click when clicking URL
         >
           {bookmark.url}
         </a>
@@ -67,7 +67,8 @@ const BookmarkCard: React.FC<BookmarkCardProps> = ({ bookmark, onToggleFavorite 
               key={cat.id}
               className="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full font-medium"
             >
-              {cat.name}
+              {/* Enhancement: Display emoji if available, otherwise just name */}
+              {cat.emoji ? `${cat.emoji} ${cat.name}` : cat.name}
             </span>
           ))}
           {bookmark.collections?.map((col) => (
@@ -94,7 +95,7 @@ const BookmarkCard: React.FC<BookmarkCardProps> = ({ bookmark, onToggleFavorite 
         <span>{new Date(bookmark.createdAt).toLocaleDateString()}</span>
         <motion.button
           onClick={(e) => {
-            e.stopPropagation();
+            e.stopPropagation(); // Prevent card click when clicking favorite button
             onToggleFavorite(bookmark.id);
           }}
           whileHover={{ scale: 1.1 }}

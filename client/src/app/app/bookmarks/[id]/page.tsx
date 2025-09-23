@@ -2,13 +2,13 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, Folder, Tags, Star, Pencil, X, Plus } from "lucide-react"; // Added Plus for consistency in modals
-import ReactMarkdown from 'react-markdown';
+import { BookOpen, Folder, Tags, Star, Pencil, X, Plus } from "lucide-react";
+import ReactMarkdown from 'react-markdown'; // Already imported, good!
 
 // Consistent component imports (adjusted paths to be relative to the page)
 import Sidebar from "../../../components/dashboard/Sidebar";
 import Header from "../../../components/dashboard/Header";
-import AddBookmarkModal from "../../../components/dashboard/AddBookmarkModal"; // This is your original AddModal
+import AddBookmarkModal from "../../../components/dashboard/AddBookmarkModal";
 import AddCategoryModal from "../../../components/dashboard/AddCategoryModal";
 import AddCollectionModal from "../../../components/dashboard/AddCollectionModal";
 
@@ -72,14 +72,15 @@ interface FrontendBookmark {
   thumbnail?: string; // Optional thumbnail
 }
 
-// BookmarkData interface for sending data to the backend API (consistent with MarklyDashboard)
+// FIX: BookmarkData interface for sending data to the backend API (consistent with backend's AddBookmarkRequestBody/BookmarkUpdate)
 interface BookmarkData {
   url: string;
   title: string;
   summary: string;
-  tag_ids: string[]; // Backend expects snake_case IDs
-  collection_ids: string[]; // Backend expects snake_case IDs
-  category_id?: string; // Optional single category ID, backend expects snake_case
+  tags: string[]; // Changed from tag_ids to tags
+  collections: string[]; // Changed from collection_ids to collections
+  category_id?: string; // Optional single category ID
+  is_fav?: boolean; // Added for PUT requests
 }
 // --- End Consistent Interfaces ---
 
@@ -87,12 +88,13 @@ interface BookmarkData {
 interface EditBookmarkModalProps {
   isOpen: boolean;
   onClose: () => void;
+  // FIX: onEditBookmark now expects BookmarkData matching backend's PUT payload
   onEditBookmark: (bookmarkId: string, data: BookmarkData) => Promise<void>;
   isLoading: boolean;
   error: string | null;
   categories: Category[];
-  collections: Collection[]; // Pass all collections
-  tags: Tag[]; // Pass all tags
+  collections: Collection[];
+  tags: Tag[];
   onAddNewTag: (tagName: string) => Promise<Tag | null>;
   initialBookmark: FrontendBookmark;
 }
@@ -105,8 +107,8 @@ const EditBookmarkModal: React.FC<EditBookmarkModalProps> = ({
   isLoading,
   error,
   categories,
-  collections, // Now receives all collections
-  tags, // Now receives all tags
+  collections,
+  tags,
   onAddNewTag,
   initialBookmark,
 }) => {
@@ -116,17 +118,15 @@ const EditBookmarkModal: React.FC<EditBookmarkModalProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(
     initialBookmark.categories[0]?.id || undefined
   );
-  // Initialize with IDs from initial bookmark's full objects
   const [selectedCollections, setSelectedCollections] = useState<string[]>(
     initialBookmark.collections.map((col) => col.id)
   );
-  // Initialize with IDs from initial bookmark's full objects
   const [selectedTags, setSelectedTags] = useState<string[]>(
     initialBookmark.tags.map((tag) => tag.id)
   );
   const [newTagInput, setNewTagInput] = useState("");
-  // Assuming isFav is part of initialBookmark and can be edited
   const [isFav, setIsFav] = useState(initialBookmark.isFav);
+  const [isAddingTag, setIsAddingTag] = useState(false); // Local loading state for adding tag
 
 
   // Reset form on initialBookmark change or modal open
@@ -140,33 +140,47 @@ const EditBookmarkModal: React.FC<EditBookmarkModalProps> = ({
       setSelectedTags(initialBookmark.tags.map((tag) => tag.id));
       setNewTagInput("");
       setIsFav(initialBookmark.isFav);
+      setIsAddingTag(false); // Reset this too
     }
   }, [isOpen, initialBookmark]);
 
   const handleTagAdd = async () => {
-    if (newTagInput.trim() === "") return;
-    const existingTag = tags.find(
-      (tag) => tag.name.toLowerCase() === newTagInput.trim().toLowerCase()
-    );
+    if (newTagInput.trim() === "" || isAddingTag) return;
 
-    if (existingTag) {
-      if (!selectedTags.includes(existingTag.id)) {
-        setSelectedTags((prev) => [...prev, existingTag.id]);
+    setIsAddingTag(true);
+    try {
+      const existingTag = tags.find(
+        (tag) => tag.name.toLowerCase() === newTagInput.trim().toLowerCase()
+      );
+
+      if (existingTag) {
+        if (!selectedTags.includes(existingTag.id)) {
+          setSelectedTags((prev) => [...prev, existingTag.id]);
+        }
+      } else {
+        const newTag = await onAddNewTag(newTagInput.trim());
+        if (newTag && !selectedTags.includes(newTag.id)) {
+          setSelectedTags((prev) => [...prev, newTag.id]);
+        }
       }
-    } else {
-      const newTag = await onAddNewTag(newTagInput.trim());
-      if (newTag && !selectedTags.includes(newTag.id)) {
-        setSelectedTags((prev) => [...prev, newTag.id]);
-      }
+      setNewTagInput("");
+    } catch (tagError) {
+      console.error("Error adding tag:", tagError);
+      // You might want to display a user-friendly error here within the modal
+    } finally {
+      setIsAddingTag(false);
     }
-    setNewTagInput("");
   };
 
-  const handleTagRemove = (tagId: string) => {
-    setSelectedTags((prev) => prev.filter((id) => id !== tagId));
+  const handleTagToggle = (tagId: string) => { // Renamed from handleTagRemove for consistency
+    setSelectedTags((prev) =>
+      prev.includes(tagId)
+        ? prev.filter((id) => id !== tagId)
+        : [...prev, tagId]
+    );
   };
 
-  // New handler for toggling collections (consistent with AddBookmarkModal)
+
   const handleCollectionToggle = (collectionId: string) => {
     setSelectedCollections((prev) =>
       prev.includes(collectionId)
@@ -178,19 +192,21 @@ const EditBookmarkModal: React.FC<EditBookmarkModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !url) {
+    if (!title.trim() || !url.trim()) {
       alert("Title and URL are required.");
       return;
     }
 
     const bookmarkData: BookmarkData = {
-      title,
-      url,
-      summary,
-      tag_ids: selectedTags,
-      collection_ids: selectedCollections,
-      category_id: selectedCategory,
-      is_fav: isFav, // Include is_fav for editing
+      title: title.trim(),
+      url: url.trim(),
+      summary: summary.trim(),
+      // FIX: Changed to 'tags' and 'collections' to match backend
+      tags: selectedTags,
+      collections: selectedCollections,
+      // FIX: Correctly send undefined if no category is selected or it's an empty string
+      category_id: selectedCategory && selectedCategory !== "" ? selectedCategory : undefined,
+      is_fav: isFav,
     };
 
     await onEditBookmark(initialBookmark.id, bookmarkData);
@@ -204,6 +220,7 @@ const EditBookmarkModal: React.FC<EditBookmarkModalProps> = ({
     exit: { opacity: 0, y: 50 },
   };
 
+  const isFormDisabled = isLoading || isAddingTag; // Combine loading states for form
 
   return (
     <motion.div
@@ -211,21 +228,22 @@ const EditBookmarkModal: React.FC<EditBookmarkModalProps> = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      onClick={onClose} // Allow clicking outside to close
+      onClick={onClose}
     >
       <motion.div
-        className="bg-white rounded-3xl shadow-2xl p-6 md:p-8 w-full max-w-lg max-h-[90vh] overflow-y-auto transform scale-95 custom-scrollbar" // Added overflow-y-auto
+        className="bg-white rounded-3xl shadow-2xl p-6 md:p-8 w-full max-w-lg max-h-[90vh] overflow-y-auto transform scale-95 custom-scrollbar"
         variants={modalVariants}
         initial="hidden"
         animate="visible"
         exit="exit"
-        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-black">Edit Bookmark</h2>
           <button
             onClick={onClose}
             className="p-2 rounded-full hover:bg-red-100 text-red-600 transition-colors"
+            disabled={isFormDisabled} // Disable close button while saving
           >
             <X className="w-5 h-5" />
           </button>
@@ -243,6 +261,7 @@ const EditBookmarkModal: React.FC<EditBookmarkModalProps> = ({
               onChange={(e) => setTitle(e.target.value)}
               className="w-full p-3 border border-green-200 rounded-lg bg-green-50 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all"
               required
+              disabled={isFormDisabled}
             />
           </div>
           <div>
@@ -256,6 +275,7 @@ const EditBookmarkModal: React.FC<EditBookmarkModalProps> = ({
               onChange={(e) => setUrl(e.target.value)}
               className="w-full p-3 border border-green-200 rounded-lg bg-green-50 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all"
               required
+              disabled={isFormDisabled}
             />
           </div>
           <div>
@@ -266,8 +286,10 @@ const EditBookmarkModal: React.FC<EditBookmarkModalProps> = ({
               id="summary"
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
-              rows={3} // Consistent row count
+              rows={3}
               className="w-full p-3 border border-green-200 rounded-lg bg-green-50 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all"
+              disabled={isFormDisabled}
+              placeholder="Optional description or notes (supports Markdown)"
             ></textarea>
           </div>
 
@@ -280,20 +302,21 @@ const EditBookmarkModal: React.FC<EditBookmarkModalProps> = ({
               value={selectedCategory || ""}
               onChange={(e) => setSelectedCategory(e.target.value || undefined)}
               className="w-full p-3 border border-green-200 rounded-lg bg-green-50 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all"
+              disabled={isFormDisabled}
             >
-              <option value="">Select Category</option> {/* Consistent placeholder */}
+              <option value="">Select Category</option>
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
-                  {cat.emoji} {cat.name}
+                  {cat.emoji ? `${cat.emoji} ${cat.name}` : cat.name} {/* Display emoji */}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Collections field updated to be like tags for multi-selection */}
+          {/* Collections field updated for multi-selection */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Collections</label>
-            <div className="flex flex-wrap gap-2 mb-2">
+            <div className="flex flex-wrap gap-2 mb-2 min-h-[24px]">
               {selectedCollections.map((colId) => {
                 const collection = collections.find(c => c.id === colId);
                 return collection ? (
@@ -303,6 +326,7 @@ const EditBookmarkModal: React.FC<EditBookmarkModalProps> = ({
                       type="button"
                       onClick={() => handleCollectionToggle(colId)}
                       className="ml-2 text-blue-500 hover:text-blue-700"
+                      disabled={isFormDisabled}
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -310,22 +334,22 @@ const EditBookmarkModal: React.FC<EditBookmarkModalProps> = ({
                 ) : null;
               })}
             </div>
-            {collections.length > 0 && (
+            {collections.length > 0 ? (
               <div className="flex flex-wrap gap-2 mt-2 border border-green-200 rounded-lg p-2 bg-green-50 max-h-28 overflow-y-auto custom-scrollbar">
                 {collections.filter(col => !selectedCollections.includes(col.id)).map(col => (
                   <button
                     key={col.id}
                     type="button"
                     onClick={() => handleCollectionToggle(col.id)}
-                    className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm hover:bg-green-200 transition-colors"
+                    className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm hover:bg-green-200 transition-colors disabled:opacity-50"
+                    disabled={isFormDisabled}
                   >
                     {col.name}
                   </button>
                 ))}
               </div>
-            )}
-            {collections.length === 0 && (
-              <p className="text-sm text-slate-500">No collections available. Create some in the dashboard sidebar!</p>
+            ) : (
+              <p className="text-sm text-slate-500">No collections available.</p>
             )}
           </div>
 
@@ -333,7 +357,7 @@ const EditBookmarkModal: React.FC<EditBookmarkModalProps> = ({
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Tags
             </label>
-            <div className="flex flex-wrap gap-2 mb-2">
+            <div className="flex flex-wrap gap-2 mb-2 min-h-[24px]">
               {selectedTags.map((tagId) => {
                 const tag = tags.find((t) => t.id === tagId);
                 return tag ? (
@@ -344,8 +368,9 @@ const EditBookmarkModal: React.FC<EditBookmarkModalProps> = ({
                     {tag.name}
                     <button
                       type="button"
-                      onClick={() => handleTagRemove(tag.id)}
+                      onClick={() => handleTagToggle(tag.id)} // Use toggle for consistency
                       className="ml-1 text-purple-500 hover:text-purple-800"
+                      disabled={isFormDisabled}
                     >
                       <X size={14} />
                     </button>
@@ -364,33 +389,42 @@ const EditBookmarkModal: React.FC<EditBookmarkModalProps> = ({
                     handleTagAdd();
                   }
                 }}
-                placeholder="Add new tag or select existing" // Consistent placeholder
+                placeholder="Add new tag or select existing"
                 className="flex-grow p-3 border border-green-200 rounded-lg bg-green-50 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all"
+                disabled={isFormDisabled || isAddingTag}
               />
               <button
                 type="button"
                 onClick={handleTagAdd}
-                className="bg-purple-500 hover:bg-purple-600 text-white p-3 rounded-lg transition-colors flex items-center justify-center"
+                className="bg-purple-500 hover:bg-purple-600 text-white p-3 rounded-lg transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isFormDisabled || isAddingTag || !newTagInput.trim()}
               >
-                <Plus className="w-5 h-5" />
+                 {isAddingTag ? (
+                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    ) : (
+                      <Plus className="w-5 h-5" />
+                    )}
               </button>
             </div>
-            {tags.length > 0 && (
+            {tags.length > 0 ? (
               <div className="flex flex-wrap gap-2 mt-2 border border-green-200 rounded-lg p-2 bg-green-50 max-h-28 overflow-y-auto custom-scrollbar">
                 {tags.filter(tag => !selectedTags.includes(tag.id)).map(tag => (
                   <button
                     key={tag.id}
                     type="button"
-                    onClick={() => setSelectedTags([...selectedTags, tag.id])}
-                    className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm hover:bg-green-200 transition-colors"
+                    onClick={() => handleTagToggle(tag.id)} // Use toggle for consistency
+                    className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm hover:bg-green-200 transition-colors disabled:opacity-50"
+                    disabled={isFormDisabled}
                   >
                     {tag.name}
                   </button>
                 ))}
               </div>
-            )}
-            {tags.length === 0 && (
-              <p className="text-sm text-slate-500">No tags available. Add a new one above!</p>
+            ) : (
+              <p className="text-sm text-slate-500">No tags available.</p>
             )}
           </div>
 
@@ -401,20 +435,31 @@ const EditBookmarkModal: React.FC<EditBookmarkModalProps> = ({
               checked={isFav}
               onChange={(e) => setIsFav(e.target.checked)}
               className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-green-300 rounded"
+              disabled={isFormDisabled}
             />
             <label htmlFor="isFav" className="text-sm font-medium text-slate-700">Mark as Favorite</label>
           </div>
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
 
           <motion.button
             type="submit"
-            className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold py-3 rounded-lg shadow-md transition-all flex items-center justify-center gap-2"
-            disabled={isLoading}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold py-3 rounded-lg shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isFormDisabled || !title.trim() || !url.trim()}
+            whileHover={!isFormDisabled ? { scale: 1.02 } : {}}
+            whileTap={!isFormDisabled ? { scale: 0.98 } : {}}
           >
-            {isLoading ? "Saving Changes..." : "Save Changes"}
+            {isLoading ? (
+              <>
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Saving Changes...
+              </>
+            ) : (
+              "Save Changes"
+            )}
           </motion.button>
         </form>
       </motion.div>
@@ -429,7 +474,7 @@ const BookmarkDetailPage = () => {
   const router = useRouter();
 
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
-  const [activePanel, setActivePanel] = useState("bookmarks");
+  const [activePanel, setActivePanel] = useState("bookmarks"); // Defaulting to 'bookmarks' for sidebar highlighting
   const [searchQuery, setSearchQuery] = useState("");
 
   const [bookmark, setBookmark] = useState<FrontendBookmark | null>(null);
@@ -439,7 +484,7 @@ const BookmarkDetailPage = () => {
   const [allCategories, setAllCategories] = useState<Category[]>([]);
   const [allCollections, setAllCollections] = useState<Collection[]>([]);
   const [allTags, setAllTags] = useState<Tag[]>([]);
-  const [allUserBookmarks, setAllUserBookmarks] = useState<FrontendBookmark[]>([]);
+  const [allUserBookmarks, setAllUserBookmarks] = useState<FrontendBookmark[]>([]); // Used for sidebar counts
 
   const [isAddBookmarkModalOpen, setIsAddBookmarkModalOpen] = useState(false);
   const [addBookmarkLoading, setAddBookmarkLoading] = useState(false);
@@ -457,6 +502,7 @@ const BookmarkDetailPage = () => {
   const [addCollectionLoading, setAddCollectionLoading] = useState(false);
   const [addCollectionError, setAddCollectionError] = useState<string | null>(null);
 
+  // Filters for sidebar, not directly affecting this page, but good for consistency
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
@@ -524,34 +570,40 @@ const BookmarkDetailPage = () => {
   );
 
   const loadPageData = useCallback(async () => {
-    if (!id) return;
+    if (!id) {
+        router.push("/app/dashboard"); // Redirect if no ID is present
+        return;
+    }
     setLoading(true);
     setError(null);
     try {
+      // FIX: Fetch all categories, collections, ALL user tags, and then the specific bookmark concurrently
       const [
-        backendBookmark,
         fetchedCategories,
         fetchedCollections,
-        fetchedTags,
-        backendBookmarks,
+        fetchedTags, // Correctly fetch all user tags
+        backendBookmark,
+        allBackendBookmarks, // For sidebar counts
       ] = await Promise.all([
-        fetchData<BackendBookmark>(`http://localhost:8080/api/bookmarks/${id}`),
         fetchData<Category[]>("http://localhost:8080/api/categories"),
         fetchData<Collection[]>("http://localhost:8080/api/collections"),
-        fetchData<Tag[]>("http://localhost:8080/api/tags"),
-        fetchData<BackendBookmark[]>("http://localhost:8080/api/bookmarks"),
+        fetchData<Tag[]>("http://localhost:8080/api/tags/user"), // <-- CORRECTED TAG FETCH ENDPOINT
+        fetchData<BackendBookmark>(`http://localhost:8080/api/bookmarks/${id}`),
+        fetchData<BackendBookmark[]>("http://localhost:8080/api/bookmarks"), // Fetch all bookmarks for sidebar counts
       ]);
 
       const actualCategories = fetchedCategories || [];
       const actualCollections = fetchedCollections || [];
       const actualTags = fetchedTags || [];
-      const actualBackendBookmarks = backendBookmarks || [];
+      const actualAllBackendBookmarks = allBackendBookmarks || [];
+
 
       setAllCategories(actualCategories);
       setAllCollections(actualCollections);
       setAllTags(actualTags);
 
-      const hydratedAllBookmarks: FrontendBookmark[] = actualBackendBookmarks.map((bm) => {
+      // Hydrate all bookmarks for sidebar counts
+      const hydratedAllBookmarks: FrontendBookmark[] = actualAllBackendBookmarks.map((bm) => {
         const hydratedTags = (bm.tags || [])
           .map((tagId) => actualTags.find((t) => t.id === tagId))
           .filter((tag): tag is Tag => tag !== undefined);
@@ -575,8 +627,10 @@ const BookmarkDetailPage = () => {
           thumbnail: bm.thumbnail,
         };
       });
-      setAllUserBookmarks(hydratedAllBookmarks);
+      setAllUserBookmarks(hydratedAllBookmarks); // Update state for sidebar counts
 
+
+      // Hydrate the specific bookmark
       if (backendBookmark) {
         const hydratedBookmark: FrontendBookmark = {
           id: backendBookmark.id,
@@ -603,10 +657,11 @@ const BookmarkDetailPage = () => {
       }
     } catch (err: any) {
       setError(err.message || "Failed to fetch bookmark details.");
+      console.error("Error loading page data:", err); // Add more detailed logging
     } finally {
       setLoading(false);
     }
-  }, [id, fetchData]);
+  }, [id, fetchData, router]); // Add router as dependency for redirect
 
   useEffect(() => {
     loadPageData();
@@ -614,8 +669,8 @@ const BookmarkDetailPage = () => {
 
   const handleToggleFavorite = useCallback(async () => {
     if (!bookmark) return;
-    setLoading(true);
-    setError(null);
+    setEditBookmarkLoading(true); // Use a specific loading state for toggling fav
+    setEditBookmarkError(null);
     try {
       const newFavStatus = !bookmark.isFav;
       const updatedBm = await fetchData<BackendBookmark>(
@@ -627,9 +682,9 @@ const BookmarkDetailPage = () => {
         setBookmark(prev => prev ? { ...prev, isFav: newFavStatus } : null);
       }
     } catch (err: any) {
-      setError(err.message || "Failed to toggle favorite status.");
+      setEditBookmarkError(err.message || "Failed to toggle favorite status.");
     } finally {
-      setLoading(false);
+      setEditBookmarkLoading(false);
     }
   }, [bookmark, fetchData]);
 
@@ -647,6 +702,8 @@ const BookmarkDetailPage = () => {
       }
     } catch (err: any) {
       console.error("Error adding new tag:", err);
+      // It's good to provide feedback to the user if this fails
+      // For now, we'll let the modal's error prop handle this via the error state
     }
     return null;
   }, [fetchData, allTags]);
@@ -658,14 +715,15 @@ const BookmarkDetailPage = () => {
       const newBookmark = await fetchData<BackendBookmark>(
         "http://localhost:8080/api/bookmarks",
         "POST",
-        bookmarkData
+        bookmarkData // BookmarkData now matches backend
       );
       if (newBookmark) {
         setIsAddBookmarkModalOpen(false);
-        await loadPageData();
+        await loadPageData(); // Refresh all page data including current bookmark and sidebar counts
       }
     } catch (err: any) {
       setAddBookmarkError(err.message || "Failed to add bookmark.");
+      console.error("Error adding bookmark:", err);
     } finally {
       setAddBookmarkLoading(false);
     }
@@ -678,14 +736,15 @@ const BookmarkDetailPage = () => {
       const updatedBookmark = await fetchData<BackendBookmark>(
         `http://localhost:8080/api/bookmarks/${bookmarkId}`,
         "PUT",
-        bookmarkData
+        bookmarkData // BookmarkData now matches backend
       );
       if (updatedBookmark) {
         setIsEditBookmarkModalOpen(false);
-        await loadPageData();
+        await loadPageData(); // Refresh all page data
       }
     } catch (err: any) {
       setEditBookmarkError(err.message || "Failed to update bookmark.");
+      console.error("Error updating bookmark:", err);
     } finally {
       setEditBookmarkLoading(false);
     }
@@ -703,10 +762,11 @@ const BookmarkDetailPage = () => {
       );
       if (newCategory) {
         setIsAddCategoryModalOpen(false);
-        await loadPageData();
+        await loadPageData(); // Refresh all page data
       }
     } catch (err: any) {
       setAddCategoryError(err.message || "Failed to add category.");
+      console.error("Error adding category:", err);
     } finally {
       setAddCategoryLoading(false);
     }
@@ -723,10 +783,11 @@ const BookmarkDetailPage = () => {
       );
       if (newCollection) {
         setIsAddCollectionModalOpen(false);
-        await loadPageData();
+        await loadPageData(); // Refresh all page data
       }
     } catch (err: any) {
       setAddCollectionError(err.message || "Failed to add collection.");
+      console.error("Error adding collection:", err);
     } finally {
       setAddCollectionLoading(false);
     }
@@ -749,6 +810,7 @@ const BookmarkDetailPage = () => {
     }
   };
 
+  // Memoized categories for sidebar display
   const categoriesForDisplay: CategoryForDisplay[] = useMemo(() => {
     return (allCategories || []).map((cat) => {
       const count = (allUserBookmarks || []).filter(
@@ -768,6 +830,7 @@ const BookmarkDetailPage = () => {
     });
   }, [allCategories, allUserBookmarks]);
 
+  // Memoized collections for sidebar display
   const collectionsForDisplay: CollectionForDisplay[] = useMemo(() => {
     return (allCollections || []).map((col) => ({
       ...col,
@@ -843,6 +906,19 @@ const BookmarkDetailPage = () => {
 
   const displayCategory = bookmark.categories.length > 0 ? bookmark.categories[0] : null;
 
+  // Function to format date and time
+  const formatDateTime = (isoString: string) => {
+    const date = new Date(isoString);
+    return date.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 text-slate-900 flex relative">
       {/* Sidebar */}
@@ -904,6 +980,7 @@ const BookmarkDetailPage = () => {
                 onClick={handleToggleFavorite}
                 className="p-2 rounded-full hover:bg-yellow-100 transition-colors"
                 aria-label="Toggle Favorite"
+                disabled={editBookmarkLoading} // Disable while favorite is toggling
               >
                 <Star
                   className={`w-8 h-8 ${bookmark.isFav ? "text-yellow-500 fill-current" : "text-slate-400"}`}
@@ -921,11 +998,12 @@ const BookmarkDetailPage = () => {
             {bookmark.url}
           </a>
 
+          {/* Markdown content rendering */}
           <div className="text-slate-700 text-lg leading-relaxed mb-6 markdown-content">
             {bookmark.summary ? (
               <ReactMarkdown>{bookmark.summary}</ReactMarkdown>
             ) : (
-              "No summary available."
+              <p className="text-slate-500 italic">No summary available.</p>
             )}
           </div>
 
@@ -965,7 +1043,7 @@ const BookmarkDetailPage = () => {
           )}
 
           <div className="text-right text-sm text-slate-500 mt-8">
-            Added on: {new Date(bookmark.createdAt).toLocaleDateString()} at {new Date(bookmark.createdAt).toLocaleTimeString()}
+            Added on: {formatDateTime(bookmark.createdAt)}
           </div>
         </motion.div>
       </div>
@@ -976,8 +1054,8 @@ const BookmarkDetailPage = () => {
           <AddBookmarkModal
             isOpen={isAddBookmarkModalOpen}
             onClose={() => setIsAddBookmarkModalOpen(false)}
-            onAddBookmark={({ url, title, summary, tags, collections, category }) =>
-              handleAddBookmark({ url, title, summary, tag_ids: tags, collection_ids: collections, category_id: category })}
+            onAddBookmark={({ url, title, summary, tags, collections, category_id, is_fav }) =>
+              handleAddBookmark({ url, title, summary, tags, collections, category_id, is_fav })}
             isLoading={addBookmarkLoading}
             error={addBookmarkError}
             categories={allCategories || []}
@@ -992,11 +1070,11 @@ const BookmarkDetailPage = () => {
             isOpen={isEditBookmarkModalOpen}
             onClose={() => setIsEditBookmarkModalOpen(false)}
             onEditBookmark={handleEditBookmark}
-            isLoading={editBookmarkLoading}
-            error={editBookmarkError}
+            isLoading={editBookmarkLoading} // Pass loading state
+            error={editBookmarkError} // Pass error state
             categories={allCategories || []}
-            collections={allCollections || []} // Pass all collections to EditModal
-            tags={allTags || []} // Pass all tags to EditModal
+            collections={allCollections || []}
+            tags={allTags || []}
             onAddNewTag={handleAddNewTag}
             initialBookmark={bookmark}
           />

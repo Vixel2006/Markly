@@ -1,7 +1,14 @@
+"use client";
 import React, { useState, useEffect } from 'react';
-import { Search, Check, Folder, Brain, Zap } from 'lucide-react';
+import { Search, Check, Folder, Brain, Zap, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const InteractiveDemo = () => {
+interface InteractiveDemoProps {
+  getSectionRef: (id: string) => (el: HTMLElement | null) => void;
+  visibleSections: { [key: string]: boolean };
+}
+
+const InteractiveDemo: React.FC<InteractiveDemoProps> = ({ getSectionRef, visibleSections }) => {
   const [currentDemo, setCurrentDemo] = useState(0);
 
   const demoSlides = [
@@ -11,10 +18,10 @@ const InteractiveDemo = () => {
       image: "🧠",
       stats: { processed: "1,247", time: "0.3s", accuracy: "94%" },
       mockData: [
-        { category: "Development", count: 234, color: "bg-blue-500" },
+        { category: "Development", count: 234, color: "bg-indigo-500" },
         { category: "Design", count: 187, color: "bg-purple-500" },
-        { category: "Research", count: 156, color: "bg-green-500" },
-        { category: "Marketing", count: 98, color: "bg-orange-500" }
+        { category: "Research", count: 156, color: "bg-emerald-500" },
+        { category: "Marketing", count: 98, color: "bg-pink-500" }
       ]
     },
     {
@@ -48,108 +55,140 @@ const InteractiveDemo = () => {
       setCurrentDemo((prev) => (prev + 1) % demoSlides.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [demoSlides.length]);
+
+  // Framer Motion Variants
+  const fadeInUp = {
+    hidden: { opacity: 0, y: 40 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } },
+  };
+
+  const slideTransition = {
+    initial: { opacity: 0, x: 20 },
+    animate: { opacity: 1, x: 0, transition: { duration: 0.5, ease: "easeOut" } },
+    exit: { opacity: 0, x: -20, transition: { duration: 0.3, ease: "easeIn" } },
+  };
 
   return (
-    <section id="demo" className="py-20 px-6">
+    <motion.section
+      ref={getSectionRef('demo-section')} // Attach ref
+      id="demo" // Ensure ID matches
+      className="py-24 px-6 bg-gradient-to-b from-white to-indigo-50"
+      initial="hidden"
+      animate={visibleSections['demo-section'] ? "visible" : "hidden"} // Animate based on visibility
+      variants={fadeInUp} // Apply animation to the section as a whole
+    >
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-6xl font-bold mb-6">
-            See The <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Magic</span> Happen
+        <motion.div
+          className="text-center mb-16"
+          variants={fadeInUp} // Apply animation to the heading block
+        >
+          <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">
+            See The <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Magic</span> Happen
           </h2>
           <p className="text-xl text-slate-600 max-w-2xl mx-auto">
             Watch how Markly's AI transforms bookmark chaos into organized knowledge
           </p>
-        </div>
+        </motion.div>
 
-        <div className="bg-white/70 backdrop-blur-xl rounded-3xl border border-slate-200/50 shadow-2xl p-8">
+        <div className="bg-white rounded-3xl border border-indigo-100 shadow-2xl p-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Demo Visualization */}
             <div className="order-2 lg:order-1">
-              <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 min-h-[400px]">
+              <div className="bg-indigo-50 rounded-2xl p-6 border border-indigo-200 min-h-[400px] shadow-inner">
                 <div className="flex items-center gap-2 mb-6">
                   <div className="w-3 h-3 bg-red-400 rounded-full"></div>
                   <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
                   <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                  <div className="flex-1 bg-slate-200 h-8 rounded-lg mx-4 flex items-center px-4">
-                    <span className="text-sm text-slate-500">markly.ai/dashboard</span>
+                  <div className="flex-1 bg-indigo-100 h-8 rounded-lg mx-4 flex items-center px-4">
+                    <span className="text-sm text-slate-600">markly.ai/dashboard</span>
                   </div>
                 </div>
                 
-                {currentDemo === 0 && (
-                  <div className="space-y-4 animate-fadeIn">
-                    <div className="text-lg font-semibold mb-4 text-slate-800">AI Categorization in Progress...</div>
-                    {demoSlides[0].mockData.map((item, idx) => (
-                      <div key={idx} className="flex items-center gap-4 p-4 bg-white rounded-xl border border-slate-200 transform transition-all hover:scale-105" style={{ animationDelay: `${idx * 200}ms` }}>
-                        <div className={`w-4 h-4 ${item.color} rounded-full`}></div>
-                        <div className="flex-1">
-                          <div className="font-medium text-slate-800">{item.category}</div>
-                          <div className="text-sm text-slate-500">{item.count} bookmarks</div>
-                        </div>
-                        <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                          <Check className="w-4 h-4 text-green-600" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <AnimatePresence mode="wait">
+                  {currentDemo === 0 && (
+                    <motion.div key="demo0" variants={slideTransition} initial="initial" animate="animate" exit="exit" className="space-y-4">
+                      <div className="text-lg font-semibold mb-4 text-gray-900">AI Categorization in Progress...</div>
+                      {demoSlides[0].mockData.map((item, idx) => (
+                        <motion.div
+                          key={idx}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.1, duration: 0.4 }}
+                          className="flex items-center gap-4 p-4 bg-white rounded-xl border border-indigo-100 transform transition-all hover:scale-[1.02] shadow-sm"
+                        >
+                          <div className={`w-4 h-4 ${item.color} rounded-full`}></div>
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">{item.category}</div>
+                            <div className="text-sm text-slate-600">{item.count} bookmarks</div>
+                          </div>
+                          <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center shadow-xs">
+                            <Check className="w-4 h-4 text-emerald-600" />
+                          </div>
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  )}
 
-                {currentDemo === 1 && (
-                  <div className="animate-fadeIn">
-                    <div className="text-lg font-semibold mb-4 text-slate-800">AI Summary Generation</div>
-                    <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
-                      <div className="font-medium text-slate-800">{demoSlides[1].mockContent.title}</div>
-                      <div className="text-sm text-blue-600">{demoSlides[1].mockContent.url}</div>
-                      <div className="p-4 bg-slate-50 rounded-lg">
-                        <div className="text-sm text-slate-600 italic mb-2">✨ AI Summary:</div>
-                        <div className="text-slate-700">{demoSlides[1].mockContent.summary}</div>
+                  {currentDemo === 1 && (
+                    <motion.div key="demo1" variants={slideTransition} initial="initial" animate="animate" exit="exit">
+                      <div className="text-lg font-semibold mb-4 text-gray-900">AI Summary Generation</div>
+                      <div className="bg-white p-6 rounded-xl border border-indigo-100 space-y-4 shadow-sm">
+                        <div className="font-medium text-gray-900">{demoSlides[1].mockContent.title}</div>
+                        <div className="text-sm text-indigo-600">{demoSlides[1].mockContent.url}</div>
+                        <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-100">
+                          <div className="text-sm text-slate-600 italic mb-2">✨ AI Summary:</div>
+                          <div className="text-slate-700">{demoSlides[1].mockContent.summary}</div>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {demoSlides[1].mockContent.tags.map((tag, idx) => (
+                            <span key={idx} className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        {demoSlides[1].mockContent.tags.map((tag, idx) => (
-                          <span key={idx} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                            {tag}
-                          </span>
+                    </motion.div>
+                  )}
+
+                  {currentDemo === 2 && (
+                    <motion.div key="demo2" variants={slideTransition} initial="initial" animate="animate" exit="exit">
+                      <div className="text-lg font-semibold mb-4 text-gray-900">Semantic Search</div>
+                      <div className="relative mb-6">
+                        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-500 w-5 h-5" />
+                        <input
+                          type="text"
+                          value={demoSlides[2].searchQuery}
+                          className="w-full pl-12 pr-4 py-3 bg-white border border-indigo-200 rounded-xl font-medium text-gray-800 shadow-sm"
+                          disabled
+                        />
+                      </div>
+                      <div className="space-y-3">
+                        {demoSlides[2].results.map((result, idx) => (
+                          <div key={idx} className="p-4 bg-white rounded-xl border border-indigo-100 flex items-center justify-between hover:shadow-md transition-all shadow-sm">
+                            <div className="font-medium text-gray-900">{result.title}</div>
+                            <div className="text-sm bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-medium">
+                              {result.relevance}% match
+                            </div>
+                          </div>
                         ))}
                       </div>
-                    </div>
-                  </div>
-                )}
-
-                {currentDemo === 2 && (
-                  <div className="animate-fadeIn">
-                    <div className="text-lg font-semibold mb-4 text-slate-800">Semantic Search</div>
-                    <div className="relative mb-6">
-                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-                      <input
-                        type="text"
-                        value={demoSlides[2].searchQuery}
-                        className="w-full pl-12 pr-4 py-3 bg-white border-2 border-blue-200 rounded-xl font-medium"
-                        disabled
-                      />
-                    </div>
-                    <div className="space-y-3">
-                      {demoSlides[2].results.map((result, idx) => (
-                        <div key={idx} className="p-4 bg-white rounded-xl border border-slate-200 flex items-center justify-between hover:shadow-md transition-all">
-                          <div className="font-medium text-slate-800">{result.title}</div>
-                          <div className="text-sm bg-green-100 text-green-700 px-3 py-1 rounded-full font-medium">
-                            {result.relevance}% match
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Progress indicators */}
               <div className="flex justify-center gap-3 mt-6">
                 {demoSlides.map((_, index) => (
-                  <button
+                  <motion.button
                     key={index}
-                    className={`h-3 rounded-full transition-all ${
-                      currentDemo === index ? 'bg-blue-500 w-8' : 'bg-slate-300 w-3'
+                    className={`h-3 rounded-full transition-all duration-300 ${
+                      currentDemo === index ? 'bg-indigo-500 w-8' : 'bg-indigo-200 w-3'
                     }`}
                     onClick={() => setCurrentDemo(index)}
+                    whileHover={{ scale: 1.2 }}
+                    aria-label={`Show demo slide ${index + 1}`}
                   />
                 ))}
               </div>
@@ -158,53 +197,44 @@ const InteractiveDemo = () => {
             {/* Demo Controls */}
             <div className="order-1 lg:order-2 space-y-6">
               {demoSlides.map((slide, index) => (
-                <div
+                <motion.div
                   key={index}
-                  className={`p-6 rounded-2xl border transition-all cursor-pointer transform hover:scale-105 ${
+                  className={`p-6 rounded-2xl border transition-all cursor-pointer transform hover:scale-[1.02] shadow-lg ${
                     currentDemo === index
-                      ? 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-300 shadow-lg'
-                      : 'bg-white/50 border-slate-200 hover:border-slate-300'
+                      ? 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-300 ring-2 ring-purple-200'
+                      : 'bg-white border-indigo-100 hover:border-indigo-200'
                   }`}
                   onClick={() => setCurrentDemo(index)}
+                  whileHover={{ scale: 1.02 }}
                 >
                   <div className="flex items-start gap-4">
                     <div className="text-4xl">{slide.image}</div>
                     <div className="flex-1">
-                      <h3 className="text-xl font-bold mb-2 text-slate-800">{slide.title}</h3>
-                      <p className="text-slate-600 mb-4">{slide.description}</p>
+                      <h3 className="text-xl font-bold mb-2 text-gray-900">{slide.title}</h3>
+                      <p className="text-slate-700 mb-4">{slide.description}</p>
                       <div className="flex gap-4 text-sm">
                         <div className="text-center">
-                          <div className="font-bold text-slate-800">{Object.values(slide.stats)[0]}</div>
-                          <div className="text-slate-500">{Object.keys(slide.stats)[0]}</div>
+                          <div className="font-bold text-gray-900">{Object.values(slide.stats)[0]}</div>
+                          <div className="text-slate-600">{Object.keys(slide.stats)[0]}</div>
                         </div>
                         <div className="text-center">
-                          <div className="font-bold text-slate-800">{Object.values(slide.stats)[1]}</div>
-                          <div className="text-slate-500">{Object.keys(slide.stats)[1]}</div>
+                          <div className="font-bold text-gray-900">{Object.values(slide.stats)[1]}</div>
+                          <div className="text-slate-600">{Object.keys(slide.stats)[1]}</div>
                         </div>
                         <div className="text-center">
-                          <div className="font-bold text-slate-800">{Object.values(slide.stats)[2]}</div>
-                          <div className="text-slate-500">{Object.keys(slide.stats)[2]}</div>
+                          <div className="font-bold text-gray-900">{Object.values(slide.stats)[2]}</div>
+                          <div className="text-slate-600">{Object.keys(slide.stats)[2]}</div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.6s ease-out forwards;
-        }
-      `}</style>
-    </section>
+    </motion.section>
   );
 };
 

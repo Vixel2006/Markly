@@ -3,20 +3,32 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { Star, Folder, Tag, BookOpen } from 'lucide-react';
+import {
+  Star,
+  Folder,
+  Tag,
+  BookOpen,
+  Search, // For integrated search
+  Filter, // For active filter display
+  Plus, // For add bookmark button
+  X, // For clearing filters / sidebar toggle
+  Menu // For sidebar toggle
+} from 'lucide-react';
 
+// Assuming these are in their respective paths
 import Sidebar from '../../../components/dashboard/Sidebar';
-import Header from '../../../components/dashboard/Header';
+// Removed Header import as it's no longer needed
 import AddBookmarkModal from '../../../components/dashboard/AddBookmarkModal';
 import AddCategoryModal from "../../../components/dashboard/AddCategoryModal";
 import AddCollectionModal from "../../../components/dashboard/AddCollectionModal";
 import BookmarkCard from '../../../components/dashboard/BookmarkCard';
 
+// --- Interfaces (kept consistent with dashboard) ---
 interface Category {
   id: string;
   name: string;
   emoji?: string;
-  color?: string;
+  color?: string; // Added color property if you store it in backend
 }
 
 interface Collection {
@@ -24,9 +36,10 @@ interface Collection {
   name: string;
 }
 
-interface Tag {
+interface TagData { // Renamed from Tag to TagData for clarity
   id: string;
   name: string;
+  // If tags had weeklyCount, prevCount from dashboard, include here
 }
 
 // Backend Bookmark interface
@@ -49,9 +62,9 @@ interface FrontendBookmark {
   title: string;
   url: string;
   summary: string;
-  categories?: Category[]; // Array of full category objects
+  categories?: Category[]; // Array of full category objects (can be single category if API allows)
   collections: Collection[]; // Array of full collection objects
-  tags: Tag[]; // Array of full tag objects
+  tags: TagData[]; // Array of full tag objects (using TagData)
   isFav: boolean; // Camel case for frontend
   createdAt: string; // Camel case for frontend
 }
@@ -77,6 +90,7 @@ interface CollectionForDisplay extends Collection {
   count: number;
 }
 
+
 const FavoriteBookmarksPage = () => {
   const router = useRouter();
 
@@ -84,7 +98,7 @@ const FavoriteBookmarksPage = () => {
   const [userBookmarks, setUserBookmarks] = useState<FrontendBookmark[]>([]);
   const [categories, setCategories] = useState<CategoryForDisplay[]>([]);
   const [collections, setCollections] = useState<CollectionForDisplay[]>([]);
-  const [tags, setTags] = useState<Tag[]>([]);
+  const [tags, setTags] = useState<TagData[]>([]); // Use TagData here
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -104,8 +118,9 @@ const FavoriteBookmarksPage = () => {
   const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activePanel, setActivePanel] = useState("favorites");
+  const [activePanel, setActivePanel] = useState("favorites"); // Keep activePanel for sidebar highlighting
 
+  // --- Utility fetchData function (kept as is) ---
   const fetchData = useCallback(async <T,>(url: string, method: string = "GET", body?: any): Promise<T | null> => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -140,83 +155,6 @@ const FavoriteBookmarksPage = () => {
     }
   }, [router]);
 
-  const loadAllData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [fetchedBackendBookmarksData, fetchedCategoriesData, fetchedCollectionsData, fetchedTagsData] = await Promise.all([
-        fetchData<BackendBookmark[]>("http://localhost:8080/api/bookmarks?isFav=true"),
-        fetchData<Category[]>(`http://localhost:8080/api/categories`),
-        fetchData<Collection[]>(`http://localhost:8080/api/collections`),
-        fetchData<Tag[]>(`http://localhost:8080/api/tags`),
-      ]);
-
-      // Ensure we have arrays even if API returns null
-      const actualCategories = fetchedCategoriesData || [];
-      const actualCollections = fetchedCollectionsData || [];
-      const actualTags = fetchedTagsData || [];
-      const backendBookmarksData = fetchedBackendBookmarksData || [];
-
-      // Set basic data first
-      setTags(actualTags);
-
-      // Hydrate bookmarks with full objects
-      const hydratedBookmarks: FrontendBookmark[] = backendBookmarksData.map(bm => {
-        const hydratedTags = (bm.tags || [])
-          .map(tagId => actualTags.find(t => t.id === tagId))
-          .filter((tag): tag is Tag => tag !== undefined);
-        
-        const hydratedCollections = (bm.collections || [])
-          .map(colId => actualCollections.find(c => c.id === colId))
-          .filter((col): col is Collection => col !== undefined);
-        
-        const hydratedCategories = bm.category
-          ? actualCategories.filter(cat => cat.id === bm.category)
-          : [];
-        
-        return {
-          id: bm.id,
-          url: bm.url,
-          title: bm.title,
-          summary: bm.summary,
-          tags: hydratedTags,
-          collections: hydratedCollections,
-          categories: hydratedCategories,
-          createdAt: bm.created_at,
-          isFav: bm.is_fav,
-        };
-      });
-
-      setUserBookmarks(hydratedBookmarks);
-
-      // Calculate categories with counts based on the hydrated bookmarks
-      const categoriesWithCounts: CategoryForDisplay[] = actualCategories.map(cat => ({
-        ...cat,
-        count: hydratedBookmarks.filter(bm => 
-          bm.categories?.some(c => c.id === cat.id)
-        ).length,
-        icon: cat.emoji || "📚",
-        color: cat.color || getDefaultCategoryColor(cat.name),
-      }));
-
-      // Calculate collections with counts based on the hydrated bookmarks
-      const collectionsWithCounts: CollectionForDisplay[] = actualCollections.map(col => ({
-        ...col,
-        count: hydratedBookmarks.filter(bm =>
-          bm.collections?.some(c => c.id === col.id)
-        ).length,
-      }));
-
-      setCategories(categoriesWithCounts);
-      setCollections(collectionsWithCounts);
-
-    } catch (err: any) {
-      setError(err.message || "Failed to load favorite bookmarks.");
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchData]);
-
   // Helper function to get default category colors
   const getDefaultCategoryColor = (categoryName: string): string => {
     switch (categoryName.toLowerCase()) {
@@ -235,6 +173,86 @@ const FavoriteBookmarksPage = () => {
     }
   };
 
+  // --- Data Loading Logic ---
+  const loadAllData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [fetchedBackendBookmarksData, fetchedCategoriesData, fetchedCollectionsData, fetchedTagsData] = await Promise.all([
+        fetchData<BackendBookmark[]>("http://localhost:8080/api/bookmarks?isFav=true"),
+        fetchData<Category[]>(`http://localhost:8080/api/categories`),
+        fetchData<Collection[]>(`http://localhost:8080/api/collections`),
+        fetchData<TagData[]>(`http://localhost:8080/api/tags`), // Fetch TagData
+      ]);
+
+      // Ensure we have arrays even if API returns null
+      const actualCategories = fetchedCategoriesData || [];
+      const actualCollections = fetchedCollectionsData || [];
+      const actualTags = fetchedTagsData || [];
+      const backendBookmarksData = fetchedBackendBookmarksData || [];
+
+      // Set basic data first
+      setTags(actualTags);
+
+      // Hydrate bookmarks with full objects
+      const hydratedBookmarks: FrontendBookmark[] = backendBookmarksData.map(bm => {
+        const hydratedTags = (bm.tags || [])
+          .map(tagId => actualTags.find(t => t.id === tagId))
+          .filter((tag): tag is TagData => tag !== undefined); // Use TagData
+        
+        const hydratedCollections = (bm.collections || [])
+          .map(colId => actualCollections.find(c => c.id === colId))
+          .filter((col): col is Collection => col !== undefined);
+        
+        // Assuming categories in BackendBookmark could be a single ID,
+        // FrontendBookmark allows an array, so we adapt.
+        const hydratedCategories = bm.category
+          ? actualCategories.filter(cat => cat.id === bm.category)
+          : [];
+        
+        return {
+          id: bm.id,
+          url: bm.url,
+          title: bm.title,
+          summary: bm.summary,
+          tags: hydratedTags,
+          collections: hydratedCollections,
+          categories: hydratedCategories, // Assign as array
+          createdAt: bm.created_at,
+          isFav: bm.is_fav,
+        };
+      });
+
+      setUserBookmarks(hydratedBookmarks);
+
+      // Calculate categories with counts based on the hydrated bookmarks
+      const categoriesWithCounts: CategoryForDisplay[] = actualCategories.map(cat => ({
+        ...cat,
+        count: hydratedBookmarks.filter(bm =>
+          bm.categories?.some(c => c.id === cat.id) // Check against array of categories
+        ).length,
+        icon: cat.emoji || "📚",
+        color: cat.color || getDefaultCategoryColor(cat.name),
+      }));
+
+      // Calculate collections with counts based on the hydrated bookmarks
+      const collectionsWithCounts: CollectionForDisplay[] = actualCollections.map(col => ({
+        ...col,
+        count: hydratedBookmarks.filter(bm =>
+          bm.collections?.some(c => c.id === col.id) // Safe check
+        ).length,
+      }));
+
+      setCategories(categoriesWithCounts);
+      setCollections(collectionsWithCounts);
+
+    } catch (err: any) {
+      setError(err.message || "Failed to load favorite bookmarks.");
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchData]);
+
   useEffect(() => {
     loadAllData();
   }, [loadAllData]);
@@ -246,14 +264,14 @@ const FavoriteBookmarksPage = () => {
     setSearchQuery("");
   }, []);
 
-  const handleAddNewTag = useCallback(async (tagName: string): Promise<Tag | null> => {
+  const handleAddNewTag = useCallback(async (tagName: string): Promise<TagData | null> => { // Use TagData
     const existingTag = tags.find(tag => tag.name.toLowerCase() === tagName.toLowerCase());
     if (existingTag) {
       return existingTag;
     }
 
     try {
-      const newTag = await fetchData<Tag>("http://localhost:8080/api/tags", "POST", { name: tagName });
+      const newTag = await fetchData<TagData>("http://localhost:8080/api/tags", "POST", { name: tagName }); // Use TagData
       if (newTag) {
         setTags((prev) => [...prev, newTag]);
         return newTag;
@@ -281,7 +299,7 @@ const FavoriteBookmarksPage = () => {
       
       if (newBookmark) {
         setIsAddBookmarkModalOpen(false);
-        // Reload all data to ensure consistency
+        // Reload all data to ensure consistency and display new bookmark if it's a favorite
         await loadAllData();
       }
     } catch (err: any) {
@@ -337,12 +355,13 @@ const FavoriteBookmarksPage = () => {
         { is_fav: newFavStatus }
       );
       if (updatedBm) {
-        // Since this is the favorites page, remove the bookmark if it's unfavorited
+        // If a bookmark is unfavorited from the favorites page, remove it from the display
         if (!newFavStatus) {
           setUserBookmarks(prev => prev.filter(bm => bm.id !== bookmarkId));
         } else {
-          // Update the bookmark in place if it's still favorited
-          setUserBookmarks(prev => prev.map(bm => 
+          // If a bookmark is newly favorited (shouldn't happen on this page directly,
+          // but as a fallback, update it in place)
+          setUserBookmarks(prev => prev.map(bm =>
             bm.id === bookmarkId ? { ...bm, isFav: newFavStatus } : bm
           ));
         }
@@ -352,32 +371,37 @@ const FavoriteBookmarksPage = () => {
     }
   }, [userBookmarks, fetchData]);
 
+  // --- Filtering Logic for Favorite Bookmarks ---
   const filteredBookmarks = useMemo(() => {
-    let filtered = userBookmarks || []; // Add null check
+    let filtered = userBookmarks || []; // Add null check for userBookmarks
 
     if (searchQuery) {
+      const lowerCaseQuery = searchQuery.toLowerCase();
       filtered = filtered.filter(bookmark =>
-        bookmark.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        bookmark.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        bookmark.url.toLowerCase().includes(searchQuery.toLowerCase())
+        bookmark.title.toLowerCase().includes(lowerCaseQuery) ||
+        bookmark.summary.toLowerCase().includes(lowerCaseQuery) ||
+        bookmark.url.toLowerCase().includes(lowerCaseQuery) ||
+        (bookmark.tags?.some(tag => tag.name.toLowerCase().includes(lowerCaseQuery))) || // Safe check
+        (bookmark.collections?.some(col => col.name.toLowerCase().includes(lowerCaseQuery))) || // Safe check
+        (bookmark.categories?.some(cat => cat.name.toLowerCase().includes(lowerCaseQuery))) // Safe check
       );
     }
 
     if (selectedCategoryId) {
       filtered = filtered.filter(bookmark =>
-        bookmark.categories?.some(cat => cat.id === selectedCategoryId)
+        bookmark.categories?.some(cat => cat.id === selectedCategoryId) // Safe check
       );
     }
 
     if (selectedCollectionId) {
       filtered = filtered.filter(bookmark =>
-        bookmark.collections?.some(col => col.id === selectedCollectionId)
+        bookmark.collections?.some(col => col.id === selectedCollectionId) // Safe check
       );
     }
 
     if (selectedTagId) {
       filtered = filtered.filter(bookmark =>
-        bookmark.tags?.some(tag => tag.id === selectedTagId)
+        bookmark.tags?.some(tag => tag.id === selectedTagId) // Safe check
       );
     }
 
@@ -385,18 +409,28 @@ const FavoriteBookmarksPage = () => {
     return filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [userBookmarks, searchQuery, selectedCategoryId, selectedCollectionId, selectedTagId]);
 
+  const isFilterActive = useMemo(() => {
+    return (
+      searchQuery !== "" ||
+      selectedCategoryId !== null ||
+      selectedCollectionId !== null ||
+      selectedTagId !== null
+    );
+  }, [searchQuery, selectedCategoryId, selectedCollectionId, selectedTagId]);
+
   const mainContentMl = isSidebarExpanded ? "ml-64" : "ml-16";
 
+  // --- Loading, Error, Empty States ---
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gradient-to-b from-green-50 to-green-200 text-slate-700">
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-b from-purple-50 to-indigo-100 text-indigo-700">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-xl font-semibold"
+          className="text-xl font-semibold flex items-center gap-3"
         >
-          Loading favorite bookmarks...
+          <Star className="w-6 h-6 animate-pulse" /> Loading favorite bookmarks...
         </motion.div>
       </div>
     );
@@ -409,13 +443,13 @@ const FavoriteBookmarksPage = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-center"
+          className="text-center p-6 rounded-lg bg-white shadow-lg"
         >
           <p className="text-xl font-semibold mb-2">Error Loading Favorites</p>
-          <p className="mb-4">{error}</p>
+          <p className="mb-4 text-red-600">{error}</p>
           <button
             onClick={() => loadAllData()}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+            className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all"
           >
             Try Again
           </button>
@@ -425,91 +459,188 @@ const FavoriteBookmarksPage = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50 text-slate-900 relative">
       <Sidebar
         isExpanded={isSidebarExpanded}
         onToggle={() => setIsSidebarExpanded(!isSidebarExpanded)}
         activePanel={activePanel}
-        setActivePanel={setActivePanel}
-        categories={categories}
+        setActivePanel={(panel) => {
+          setActivePanel(panel);
+          if (panel !== "favorites") { // If navigating away from favorites, clear filters
+            handleClearFilters();
+            router.push(`/app/${panel}`); // Example: navigate to /app/overview or /app/profile
+          }
+        }}
+        categories={categories} // Passed for potential future category filtering in sidebar
         collections={collections}
         tags={tags}
-        onCategorySelect={setSelectedCategoryId}
+        onCategorySelect={(id) => { setSelectedCategoryId(id); setActivePanel("favorites"); }} // Filter on this page
         selectedCategoryId={selectedCategoryId}
-        onCollectionSelect={setSelectedCollectionId}
+        onCollectionSelect={(id) => { setSelectedCollectionId(id); setActivePanel("favorites"); }} // Filter on this page
         selectedCollectionId={selectedCollectionId}
-        onTagSelect={setSelectedTagId}
+        onTagSelect={(id) => { setSelectedTagId(id); setActivePanel("favorites"); }} // Filter on this page
         selectedTagId={selectedTagId}
         onClearFilters={handleClearFilters}
         onAddCategoryClick={() => setIsAddCategoryModalOpen(true)}
         onAddCollectionClick={() => setIsAddCollectionModalOpen(true)}
       />
 
-      <main className={`flex-1 transition-all duration-300 ${mainContentMl} p-8 custom-scrollbar`}>
-        <Header 
-          onAddBookmarkClick={() => setIsAddBookmarkModalOpen(true)} 
-          onSearchChange={setSearchQuery} 
-          searchQuery={searchQuery} 
-          totalBookmarksCount={userBookmarks.length} 
-        />
-
-        {/* Favorite Bookmarks View */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mt-8"
-        >
-          <div className="flex items-center gap-2 mb-6">
-            <Star className="w-6 h-6 text-yellow-500" />
-            <h1 className="text-2xl font-bold text-gray-900">Favorite Bookmarks</h1>
-            <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-sm">
-              {filteredBookmarks.length}
-            </span>
+      {/* Main Content Area */}
+      <main className={`flex-1 transition-all duration-300 ${mainContentMl} custom-scrollbar`}>
+        {/* Fixed Top Bar (replacing old Header) */}
+        <div className="fixed top-0 right-0 z-20 bg-white bg-opacity-95 backdrop-blur-sm p-4 w-full flex items-center justify-between shadow-sm border-b border-gray-100" style={{ marginLeft: mainContentMl, width: `calc(100% - ${mainContentMl})` }}>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
+              className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+              aria-label={isSidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
+            >
+              {isSidebarExpanded ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+            <h1 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+              <Star className="w-5 h-5 text-yellow-500" /> Favorite Bookmarks
+            </h1>
           </div>
+          <motion.button
+            onClick={() => setIsAddBookmarkModalOpen(true)}
+            className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-4 py-2 rounded-lg shadow-md hover:from-blue-600 hover:to-indigo-600 transition-all flex items-center gap-2 text-sm font-medium"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Plus className="w-4 h-4" /> New Bookmark
+          </motion.button>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredBookmarks.length > 0 ? (
-              filteredBookmarks.map((bookmark) => (
-                <BookmarkCard
-                  key={bookmark.id}
-                  bookmark={bookmark}
-                  onToggleFavorite={handleToggleFavorite}
-                />
-              ))
-            ) : (
-              <div className="col-span-full text-center text-gray-600 py-16">
-                <Star className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                <p className="text-xl font-semibold mb-2">No favorite bookmarks found</p>
-                <p className="mb-4">
-                  {searchQuery || selectedCategoryId || selectedCollectionId || selectedTagId
-                    ? "No favorites match your current filters."
-                    : "You haven't marked any bookmarks as favorite yet."
-                  }
-                </p>
-                {(searchQuery || selectedCategoryId || selectedCollectionId || selectedTagId) && (
+        {/* Content Section - Add padding-top to avoid being hidden behind the fixed top bar */}
+        <div className="pt-20 p-6"> {/* Adjusted padding-top and added p-6 for general content padding */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="mt-4"
+          >
+            {/* Integrated Search and Filter Controls for Favorites */}
+            <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 border border-gray-100">
+              <h2 className="text-2xl font-bold text-gray-800 mb-5 flex items-center gap-3">
+                <Search className="w-7 h-7 text-gray-600" /> Search & Filter Favorites
+              </h2>
+
+              <div className="flex flex-col md:flex-row items-center gap-4 mb-5">
+                <div className="relative flex-1 w-full">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    placeholder="Search favorite bookmarks by title, URL, tags..."
+                    className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:ring-2 focus:ring-yellow-300 focus:outline-none shadow-sm"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Active Filters Display */}
+              {isFilterActive && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm"
+                >
+                  <div className="flex items-center space-x-3 flex-wrap gap-y-2">
+                    <Filter className="w-5 h-5 text-yellow-600" />
+                    <span className="font-semibold text-lg">Active Filters:</span>
+                    {searchQuery && (
+                      <span className="bg-yellow-200 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
+                        Search: "{searchQuery}" <X className="w-4 h-4 ml-1 cursor-pointer" onClick={() => setSearchQuery("")} />
+                      </span>
+                    )}
+                    {selectedCategoryId && (
+                      <span className="bg-yellow-200 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
+                        Category: {categories.find(c => c.id === selectedCategoryId)?.name} <X className="w-4 h-4 ml-1 cursor-pointer" onClick={() => setSelectedCategoryId(null)} />
+                      </span>
+                    )}
+                    {selectedCollectionId && (
+                      <span className="bg-yellow-200 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
+                        Collection: {collections.find(c => c.id === selectedCollectionId)?.name} <X className="w-4 h-4 ml-1 cursor-pointer" onClick={() => setSelectedCollectionId(null)} />
+                      </span>
+                    )}
+                    {selectedTagId && (
+                      <span className="bg-yellow-200 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
+                        Tag: {tags.find(t => t.id === selectedTagId)?.name} <X className="w-4 h-4 ml-1 cursor-pointer" onClick={() => setSelectedTagId(null)} />
+                      </span>
+                    )}
+                  </div>
                   <button
                     onClick={handleClearFilters}
-                    className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all mr-4"
+                    className="flex-shrink-0 ml-0 sm:ml-4 px-4 py-2 bg-yellow-600 text-white rounded-full text-sm hover:bg-yellow-700 transition-colors flex items-center gap-1.5 shadow-md"
                   >
-                    Clear Filters
+                    <X className="w-4 h-4" /> Clear All
                   </button>
-                )}
-                <button
-                  onClick={() => router.push("/app/bookmarks/all")}
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition-all"
-                >
-                  View All Bookmarks
-                </button>
-              </div>
-            )}
-          </div>
-        </motion.div>
+                </motion.div>
+              )}
+            </div>
+
+            {/* Favorite Bookmarks Grid */}
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+              <Star className="w-6 h-6 text-yellow-500" /> Your Favorite Bookmarks ({filteredBookmarks.length})
+            </h2>
+            <motion.div
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ staggerChildren: 0.05 }}
+            >
+              {filteredBookmarks.length > 0 ? (
+                filteredBookmarks.map((bookmark) => (
+                  <motion.div
+                    key={bookmark.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <BookmarkCard
+                      bookmark={bookmark}
+                      onToggleFavorite={handleToggleFavorite}
+                    />
+                  </motion.div>
+                ))
+              ) : (
+                <div className="col-span-full text-center text-gray-600 py-20 bg-white rounded-2xl shadow-lg border border-gray-100">
+                  <Star className="w-20 h-20 mx-auto mb-6 text-gray-300" />
+                  {isFilterActive ? (
+                    <>
+                      <p className="text-2xl font-semibold mb-3">No favorite bookmarks match your filters.</p>
+                      <p className="text-lg mb-6">Try adjusting your search or clearing some filters.</p>
+                      <button
+                        onClick={handleClearFilters}
+                        className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold py-3 px-8 rounded-lg shadow-md transition-all flex items-center mx-auto gap-2 text-lg"
+                      >
+                        <X className="w-5 h-5" /> Clear All Filters
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-2xl font-semibold mb-3">Your favorite bookmarks list is empty!</p>
+                      <p className="text-lg mb-6">Start marking bookmarks with a <Star className="inline-block w-6 h-6 text-yellow-400 align-text-bottom" /> to see them here.</p>
+                      <button
+                        onClick={() => router.push("/app")} // Go to main dashboard to find bookmarks
+                        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3 px-8 rounded-lg shadow-md transition-all flex items-center mx-auto gap-2 text-lg"
+                      >
+                        <BookOpen className="w-5 h-5" /> View All Bookmarks
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        </div> {/* End pt-20 div */}
       </main>
 
+      {/* Modals */}
       <AnimatePresence>
         {isAddBookmarkModalOpen && (
           <AddBookmarkModal
+            isOpen={isAddBookmarkModalOpen}
             onClose={() => setIsAddBookmarkModalOpen(false)}
             onAddBookmark={handleAddBookmark}
             isLoading={addBookmarkLoading}
@@ -518,25 +649,24 @@ const FavoriteBookmarksPage = () => {
             collections={collections}
             tags={tags}
             onAddNewTag={handleAddNewTag}
-            isOpen={isAddBookmarkModalOpen}
           />
         )}
         {isAddCategoryModalOpen && (
           <AddCategoryModal
+            isOpen={isAddCategoryModalOpen}
             onClose={() => setIsAddCategoryModalOpen(false)}
             onAddCategory={handleAddCategory}
             isLoading={addCategoryLoading}
             error={addCategoryError}
-            isOpen={isAddCategoryModalOpen}
           />
         )}
         {isAddCollectionModalOpen && (
           <AddCollectionModal
+            isOpen={isAddCollectionModalOpen}
             onClose={() => setIsAddCollectionModalOpen(false)}
             onAddCollection={handleAddCollection}
             isLoading={addCollectionLoading}
             error={addCollectionError}
-            isOpen={isAddCollectionModalOpen}
           />
         )}
       </AnimatePresence>
