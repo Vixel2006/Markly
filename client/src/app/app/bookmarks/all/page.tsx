@@ -539,10 +539,10 @@ const MarklyDashboard = () => {
         className={`flex-1 p-6 transition-all duration-300 ${mainContentMl} custom-scrollbar`}
       >
         <Header
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery} // Consistent with second code block
-          onAddBookmarkClick={() => setIsAddBookmarkModalOpen(true)}
-          totalBookmarksCount={(userBookmarks || []).length} // From second code block
+          isSidebarExpanded={isSidebarExpanded}
+          onSidebarToggle={() => setIsSidebarExpanded(!isSidebarExpanded)}
+          currentPageTitle="All Bookmarks"
+          showSearch={true} // Show quick search on dashboard
         />
 
         {/* Dashboard View */}
