@@ -1,12 +1,13 @@
+// components/auth/RegisterForm.tsx
 "use client";
 
 import React, { useState } from 'react';
-import { ArrowRight, Check, Mail, Lock, User } from 'lucide-react'; // Removed BookOpen
+import { ArrowRight, Check, Mail, Lock, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import TextInput from './TextInput';
 import PasswordInput from './PasswordInput';
 import SocialButtons from './SocialButtons';
-import PasswordStrengthIndicator from './PasswordStrengthIndicator'; // Assuming this exists and is styled
+import PasswordStrengthIndicator from './PasswordStrengthIndicator';
 
 interface RegisterFormProps {
   onSwitchToSignIn: () => void;
@@ -107,8 +108,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToSignIn }) => {
   return (
     <div className="w-full">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-black mb-2">Create your account</h1>
-        <p className="text-slate-600">Start organizing your bookmarks with AI</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Create your account</h1> {/* Updated text color */}
+        <p className="text-slate-700">Start organizing your bookmarks with AI</p> {/* Updated text color */}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -149,7 +150,6 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToSignIn }) => {
           placeholder="Create a strong password"
           showPassword={showPassword}
           toggleShowPassword={() => setShowPassword(!showPassword)}
-          icon={<Lock className="w-5 h-5 text-slate-500" />}
         />
         {formData.password && <PasswordStrengthIndicator password={formData.password} />}
 
@@ -162,7 +162,6 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToSignIn }) => {
           placeholder="Re-enter your password"
           showPassword={showConfirmPassword}
           toggleShowPassword={() => setShowConfirmPassword(!showConfirmPassword)}
-          icon={<Lock className="w-5 h-5 text-slate-500" />}
         />
         {formData.confirmPassword && formData.password === formData.confirmPassword && !errors.confirmPassword && (
           <div className="flex items-center gap-2 mt-2 text-green-600 text-sm">
@@ -175,10 +174,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToSignIn }) => {
           <label className="flex items-start gap-3 cursor-pointer">
             <input
               type="checkbox"
-              className="mt-1 rounded bg-green-100 border-green-200 text-purple-600 focus:ring-purple-600/50 focus:ring-2"
+              className="mt-1 rounded bg-indigo-100 border-indigo-200 text-purple-600 focus:ring-purple-600/50 focus:ring-2" // Updated bg and border
               required
             />
-            <span className="text-sm text-slate-600">
+            <span className="text-sm text-slate-700"> {/* Updated text color */}
               I agree to the{' '}
               <a href="#" className="text-purple-600 hover:text-purple-700 font-medium transition-colors">Terms of Service</a>
               {' '}and{' '}
@@ -207,16 +206,16 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToSignIn }) => {
 
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-green-100"></div>
+            <div className="w-full border-t border-indigo-100"></div> {/* Updated border color */}
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="bg-white/80 px-4 text-slate-600">Or sign up with</span>
+            <span className="bg-white/80 px-4 text-slate-700">Or sign up with</span> {/* Updated text color */}
           </div>
         </div>
 
-        <SocialButtons /> {/* Assuming this component is styled internally */}
+        <SocialButtons />
 
-        <p className="text-center text-slate-600 mt-6">
+        <p className="text-center text-slate-700 mt-6"> {/* Updated text color */}
           Already have an account?{' '}
           <button
             type="button"

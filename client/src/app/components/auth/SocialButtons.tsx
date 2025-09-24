@@ -1,6 +1,6 @@
 // components/auth/SocialButtons.tsx
 import React from 'react';
-import { Github } from 'lucide-react'; // Import Github icon
+import { Github } from 'lucide-react';
 
 const SocialButtons = () => {
   return (
@@ -8,7 +8,7 @@ const SocialButtons = () => {
       <button
         type="button"
         className="flex items-center justify-center gap-2 py-3.5 px-6
-          bg-white border border-green-200 hover:bg-green-50 hover:border-green-300
+          bg-white border border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 {/* Updated border and hover colors */}
           rounded-xl transition-all text-slate-700 font-medium shadow-sm hover:shadow-md"
       >
         {/* Google SVG from your original code */}
@@ -23,10 +23,10 @@ const SocialButtons = () => {
       <button
         type="button"
         className="flex items-center justify-center gap-2 py-3.5 px-6
-          bg-white border border-green-200 hover:bg-green-50 hover:border-green-300
+          bg-white border border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 {/* Updated border and hover colors */}
           rounded-xl transition-all text-slate-700 font-medium shadow-sm hover:shadow-md"
       >
-        <Github className="w-5 h-5 text-black" /> {/* Using Lucide icon for consistency */}
+        <Github className="w-5 h-5 text-black" />
         GitHub
       </button>
     </div>
@@ -34,3 +34,4 @@ const SocialButtons = () => {
 };
 
 export default SocialButtons;
+

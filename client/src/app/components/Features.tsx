@@ -1,3 +1,4 @@
+// components/Features.tsx
 "use client";
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { Zap, Search, BookOpen, TrendingUp, Globe, Star } from 'lucide-react';
@@ -74,12 +75,12 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({ getSectionRef, visibl
 
   return (
     <motion.section
-      ref={getSectionRef('features-section')} // Attach ref
-      id="features" // Ensure ID matches
+      ref={getSectionRef('features-section')}
+      id="features-section" // FIXED: ID now matches ref string
       className="py-24 px-6 bg-gradient-to-b from-white to-purple-50"
       initial="hidden"
-      animate={visibleSections['features-section'] ? "visible" : "hidden"} // Animate based on visibility
-      variants={{ visible: { transition: { staggerChildren: 0.1 } } }} // Stagger children
+      animate={visibleSections['features-section'] ? "visible" : "hidden"}
+      variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
     >
       <div className="max-w-7xl mx-auto">
         <motion.div

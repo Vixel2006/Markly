@@ -18,7 +18,7 @@ const PasswordStrengthIndicator: React.FC<PasswordStrengthIndicatorProps> = ({ p
   return (
     <div className="mt-2">
       <div className="flex items-center gap-2">
-        <div className="flex-1 bg-green-100 rounded-full h-1">
+        <div className="flex-1 bg-indigo-100 rounded-full h-1"> {/* Updated background color */}
           <div
             className={`h-1 rounded-full transition-all duration-300 ${
               strength.strength === 1 ? 'w-1/3 bg-red-500' :

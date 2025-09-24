@@ -1,3 +1,4 @@
+// components/Hero.tsx - No changes needed for ID/Refs
 "use client";
 import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowRight, Play, Sparkles, Users, Folder, Clock, Award, BarChart3, Brain } from 'lucide-react';
@@ -40,16 +41,16 @@ const HeroSection: React.FC<HeroSectionProps> = ({ getSectionRef, visibleSection
 
   return (
     <motion.section
-      ref={getSectionRef('hero-section')} // Attach ref
-      id="hero-section" // Ensure ID matches for IntersectionObserver
+      ref={getSectionRef('hero-section')}
+      id="hero-section" // ID matches ref string
       className="pt-32 pb-24 px-6 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 relative overflow-hidden"
       initial="hidden"
-      animate={visibleSections['hero-section'] ? "visible" : "hidden"} // Animate based on visibility
+      animate={visibleSections['hero-section'] ? "visible" : "hidden"}
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(120,119,198,0.2),rgba(255,255,255,0))]"></div>
       <div className="max-w-7xl mx-auto relative z-10">
         <motion.div
-          variants={fadeInUp} // Apply animation to the content wrapper
+          variants={fadeInUp}
           className="text-center mb-16"
         >
           <motion.div

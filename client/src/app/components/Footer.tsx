@@ -1,11 +1,11 @@
-// components/landing/FooterSection.tsx
+// components/landing/FooterSection.tsx - No changes needed for ID/Refs
 "use client";
 import React from 'react';
 import { BookOpen, Twitter, Github, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
-const FooterSection = () => { // Renamed for consistency
+const FooterSection = () => {
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
@@ -22,7 +22,7 @@ const FooterSection = () => { // Renamed for consistency
     }
   };
 
-  const fadeInUpVariant = { // Re-defined for this component's scope
+  const fadeInUpVariant = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, delay: 0.5 } }
   };
@@ -63,8 +63,8 @@ const FooterSection = () => { // Renamed for consistency
           <motion.div variants={itemVariants}>
             <h4 className="font-bold text-gray-900 mb-4">Product</h4>
             <ul className="space-y-2 text-slate-700">
-              <li><Link href="#features" className="hover:text-indigo-700 transition-colors">Features</Link></li>
-              <li><Link href="#pricing" className="hover:text-indigo-700 transition-colors">Pricing</Link></li>
+              <li><Link href="#features-section" className="hover:text-indigo-700 transition-colors">Features</Link></li> {/* UPDATED HREF */}
+              <li><Link href="#pricing-section" className="hover:text-indigo-700 transition-colors">Pricing</Link></li> {/* UPDATED HREF */}
               <li><Link href="/api" className="hover:text-indigo-700 transition-colors">API Docs</Link></li>
               <li><Link href="/changelog" className="hover:text-indigo-700 transition-colors">Changelog</Link></li>
             </ul>

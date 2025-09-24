@@ -1,4 +1,3 @@
-// components/auth/AuthWrapper.tsx
 import React, { ReactNode } from 'react';
 
 interface AuthWrapperProps {

@@ -1,3 +1,4 @@
+// components/dashboard/AddBookmarkModal.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -52,7 +53,7 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
   error,
   categories,
   collections,
-  tags, // Now contains all user's tags
+  tags,
   onAddNewTag,
 }) => {
   const [url, setUrl] = useState("");
@@ -61,10 +62,9 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [newTagInput, setNewTagInput] = useState("");
   const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
-  // Initialize as undefined to correctly reflect an optional field not being sent if no category is chosen
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
   const [isFav, setIsFav] = useState(false);
-  const [isAddingTag, setIsAddingTag] = useState(false); // State for loading when adding a new tag
+  const [isAddingTag, setIsAddingTag] = useState(false);
 
   // Reset form fields when modal closes
   useEffect(() => {
@@ -75,9 +75,9 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
       setSelectedTags([]);
       setNewTagInput("");
       setSelectedCollections([]);
-      setSelectedCategory(undefined); // Reset to undefined
+      setSelectedCategory(undefined);
       setIsFav(false);
-      setIsAddingTag(false); // Reset this too
+      setIsAddingTag(false);
     }
   }, [isOpen]);
 
@@ -95,15 +95,15 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
           setSelectedTags([...selectedTags, existingTag.id]);
         }
       } else {
-        const newTag = await onAddNewTag(newTagInput.trim()); // Call parent to add tag
+        const newTag = await onAddNewTag(newTagInput.trim());
         if (newTag && !selectedTags.includes(newTag.id)) {
-          setSelectedTags((prev) => [...prev, newTag.id]); // Add new tag's ID to selected
+          setSelectedTags((prev) => [...prev, newTag.id]);
         }
       }
       setNewTagInput("");
-    } catch (tagError) { // Renamed error variable to avoid conflict
+    } catch (tagError) {
       console.error("Error adding tag:", tagError);
-      // You might want to display a user-friendly error here
+      // In a real app, display a user-friendly error (e.g., a toast notification)
     } finally {
       setIsAddingTag(false);
     }
@@ -128,23 +128,19 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!url.trim() || !title.trim()) {
-      return;
+      return; // Basic validation
     }
 
     const bookmarkData: BookmarkData = {
       url: url.trim(),
       title: title.trim(),
       summary: summary.trim(),
-      tags: selectedTags, // Array of string IDs
-      collections: selectedCollections, // Array of string IDs
-      // Correctly send undefined if no category is selected or it's an empty string
+      tags: selectedTags,
+      collections: selectedCollections,
       category_id: selectedCategory && selectedCategory !== "" ? selectedCategory : undefined,
       is_fav: isFav,
-      // thumbnail is not expected by backend AddBookmarkRequestBody, so omitting it here
-      // If needed, it would require backend changes to models.AddBookmarkRequestBody
     };
 
-    console.log("Submitting bookmark data:", bookmarkData); // Good for debugging!
     onAddBookmark(bookmarkData);
   };
 
@@ -167,9 +163,8 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
           onClick={onClose}
         >
           <motion.div
-            // Adjusted width classes as requested
-            className="bg-white rounded-3xl shadow-2xl p-6 md:p-8 w-full max-w-[80vw] lg:max-w-[70vw] max-h-[90vh] overflow-y-auto transform scale-95"
-            style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9' }} // Custom scrollbar styling
+            className="bg-white rounded-3xl shadow-2xl p-6 md:p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto transform scale-95 border border-indigo-100" // Adjusted max-w and added border
+            style={{ scrollbarWidth: 'thin', scrollbarColor: '#a78bfa #e0e7ff' }} // Custom scrollbar styling (purple-400 thumb, indigo-100 track)
             variants={modalVariants}
             initial="hidden"
             animate="visible"
@@ -177,11 +172,11 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-black">Add New Bookmark</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Add New Bookmark</h2> {/* Consistent heading color */}
               <button
                 onClick={onClose}
                 className="p-2 rounded-full hover:bg-red-100 text-red-600 transition-colors"
-                disabled={isLoading} // Disable close button while loading
+                disabled={isLoading}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -197,9 +192,9 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
                   id="url"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  className="w-full p-3 border border-green-200 rounded-lg bg-green-50 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all"
+                  className="w-full p-3 border border-indigo-200 rounded-lg bg-indigo-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all placeholder-slate-500" // Updated colors, added text-gray-900
                   required
-                  disabled={isLoading} // Disable input while loading
+                  disabled={isLoading}
                   placeholder="https://example.com"
                 />
               </div>
@@ -213,9 +208,9 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
                   id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full p-3 border border-green-200 rounded-lg bg-green-50 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all"
+                  className="w-full p-3 border border-indigo-200 rounded-lg bg-indigo-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all placeholder-slate-500" // Updated colors
                   required
-                  disabled={isLoading} // Disable input while loading
+                  disabled={isLoading}
                   placeholder="Enter bookmark title"
                 />
               </div>
@@ -229,25 +224,24 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
                   value={summary}
                   onChange={(e) => setSummary(e.target.value)}
                   rows={3}
-                  className="w-full p-3 border border-green-200 rounded-lg bg-green-50 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all resize-y" // Allow vertical resize
-                  disabled={isLoading} // Disable input while loading
+                  className="w-full p-3 border border-indigo-200 rounded-lg bg-indigo-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all resize-y placeholder-slate-500" // Updated colors
+                  disabled={isLoading}
                   placeholder="Optional description or notes"
                 />
               </div>
 
-              {/* === CORRECTED CATEGORY SELECT BLOCK === */}
               <div>
                 <label htmlFor="category" className="block text-sm font-medium text-slate-700 mb-1">
                   Category
                 </label>
                 <select
                   id="category"
-                  value={selectedCategory || ""} // Use || "" for select element to handle undefined
-                  onChange={(e) => setSelectedCategory(e.target.value || undefined)} // Convert empty string back to undefined
-                  className="w-full p-3 border border-green-200 rounded-lg bg-green-50 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all"
-                  disabled={isLoading} // Disable select while loading
+                  value={selectedCategory || ""}
+                  onChange={(e) => setSelectedCategory(e.target.value || undefined)}
+                  className="w-full p-3 border border-indigo-200 rounded-lg bg-indigo-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all" // Updated colors
+                  disabled={isLoading}
                 >
-                  <option value="">Select Category</option>
+                  <option value="" className="text-slate-500">Select Category</option>
                   {categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
                       {cat.emoji ? `${cat.emoji} ${cat.name}` : cat.name}
@@ -255,22 +249,20 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
                   ))}
                 </select>
               </div>
-              {/* === END CORRECTED CATEGORY SELECT BLOCK === */}
 
-              {/* === CORRECTED COLLECTIONS BLOCK === */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Collections</label>
                 <div className="flex flex-wrap gap-2 mb-2 min-h-[24px]">
                   {selectedCollections.map((colId) => {
                     const collection = collections.find(c => c.id === colId);
                     return collection ? (
-                      <span key={colId} className="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                      <span key={colId} className="flex items-center bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm"> {/* Updated colors */}
                         {collection.name}
                         <button
                           type="button"
                           onClick={() => handleCollectionToggle(colId)}
-                          className="ml-2 text-blue-500 hover:text-blue-700"
-                          disabled={isLoading} // Disable button while loading
+                          className="ml-2 text-indigo-500 hover:text-indigo-700" // Updated colors
+                          disabled={isLoading}
                         >
                           <X className="w-3 h-3" />
                         </button>
@@ -278,26 +270,24 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
                     ) : null;
                   })}
                 </div>
-                {/* Available collections to select from */}
                 {collections.length > 0 ? (
-                  <div className="flex flex-wrap gap-2 mt-2 border border-green-200 rounded-lg p-2 bg-green-50 max-h-28 overflow-y-auto custom-scrollbar">
+                  <div className="flex flex-wrap gap-2 mt-2 border border-indigo-200 rounded-lg p-2 bg-indigo-50 max-h-28 overflow-y-auto custom-scrollbar"> {/* Updated colors */}
                     {collections.filter(col => !selectedCollections.includes(col.id)).map(col => (
                       <button
                         key={col.id}
                         type="button"
                         onClick={() => handleCollectionToggle(col.id)}
-                        className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm hover:bg-green-200 transition-colors disabled:opacity-50"
-                        disabled={isLoading} // Disable button while loading
+                        className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm hover:bg-indigo-200 transition-colors disabled:opacity-50" // Updated colors
+                        disabled={isLoading}
                       >
                         {col.name}
                       </button>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-slate-500">No collections available. Create some in the dashboard sidebar!</p>
+                  <p className="text-sm text-slate-500 mt-2">No collections available. Create some in the dashboard sidebar!</p>
                 )}
               </div>
-              {/* === END CORRECTED COLLECTIONS BLOCK === */}
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Tags</label>
@@ -305,13 +295,13 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
                   {selectedTags.map((tagId) => {
                     const tag = tags.find(t => t.id === tagId);
                     return tag ? (
-                      <span key={tagId} className="flex items-center bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm">
+                      <span key={tagId} className="flex items-center bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm"> {/* Updated colors */}
                         {tag.name}
                         <button
                           type="button"
                           onClick={() => handleTagToggle(tagId)}
-                          className="ml-2 text-purple-500 hover:text-purple-700"
-                          disabled={isLoading} // Disable button while loading
+                          className="ml-2 text-purple-500 hover:text-purple-700" // Updated colors
+                          disabled={isLoading}
                         >
                           <X className="w-3 h-3" />
                         </button>
@@ -331,14 +321,14 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
                       }
                     }}
                     placeholder="Add new tag or select existing"
-                    className="flex-1 p-3 border border-green-200 rounded-lg bg-green-50 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all"
-                    disabled={isLoading || isAddingTag} // Disable input while adding tag or general loading
+                    className="flex-1 p-3 border border-indigo-200 rounded-lg bg-indigo-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all placeholder-slate-500" // Updated colors
+                    disabled={isLoading || isAddingTag}
                   />
                   <button
                     type="button"
                     onClick={handleTagAdd}
-                    className="bg-purple-500 hover:bg-purple-600 text-white p-3 rounded-lg transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={isLoading || isAddingTag || !newTagInput.trim()} // Disable button while adding tag, general loading, or if input is empty
+                    className="bg-purple-500 hover:bg-purple-600 text-white p-3 rounded-lg transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-md" // Added shadow
+                    disabled={isLoading || isAddingTag || !newTagInput.trim()}
                   >
                     {isAddingTag ? (
                       <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -351,21 +341,21 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
                   </button>
                 </div>
                 {tags.length > 0 ? (
-                  <div className="flex flex-wrap gap-2 mt-2 border border-green-200 rounded-lg p-2 bg-green-50 max-h-28 overflow-y-auto custom-scrollbar">
+                  <div className="flex flex-wrap gap-2 mt-2 border border-indigo-200 rounded-lg p-2 bg-indigo-50 max-h-28 overflow-y-auto custom-scrollbar"> {/* Updated colors */}
                     {tags.filter(tag => !selectedTags.includes(tag.id)).map(tag => (
                       <button
                         key={tag.id}
                         type="button"
-                        onClick={() => handleTagToggle(tag.id)} // Use handleTagToggle
-                        className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm hover:bg-green-200 transition-colors disabled:opacity-50"
-                        disabled={isLoading} // Disable button while loading
+                        onClick={() => handleTagToggle(tag.id)}
+                        className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm hover:bg-indigo-200 transition-colors disabled:opacity-50" // Updated colors
+                        disabled={isLoading}
                       >
                         {tag.name}
                       </button>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-slate-500">No tags available. Add a new one above!</p>
+                  <p className="text-sm text-slate-500 mt-2">No tags available. Add a new one above!</p>
                 )}
               </div>
 
@@ -375,8 +365,8 @@ const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({
                   id="isFav"
                   checked={isFav}
                   onChange={(e) => setIsFav(e.target.checked)}
-                  className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-green-300 rounded"
-                  disabled={isLoading} // Disable checkbox while loading
+                  className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-indigo-300 rounded" // Updated border color
+                  disabled={isLoading}
                 />
                 <label htmlFor="isFav" className="text-sm font-medium text-slate-700">
                   Mark as Favorite

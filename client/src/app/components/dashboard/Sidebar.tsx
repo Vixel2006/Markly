@@ -86,8 +86,8 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const navItems = [
     { name: "Dashboard", icon: LayoutDashboard, panel: "overview", path: "/app" },
-    { name: "All Bookmarks", icon: Bookmark, panel: "bookmarks", path: "/app" },
-    { name: "Favorites", icon: Star, panel: "favorites", path: "/app/favorites" },
+    { name: "All Bookmarks", icon: Bookmark, panel: "bookmarks", path: "/app/bookmarks/all" },
+    { name: "Favorites", icon: Star, panel: "favorites", path: "/app/bookmarks/favorite" },
     { name: "AI Suggested", icon: Lightbulb, panel: "ai-suggested", path: "/app/ai-suggested" },
     { name: "Profile", icon: User, panel: "profile", path: "/app/profile" },
   ];

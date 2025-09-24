@@ -1,11 +1,12 @@
+// components/auth/SignInForm.tsx
 "use client";
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Mail, Lock } from 'lucide-react'; // Removed BookOpen as it's in MarklyAuthPages
-import TextInput from './TextInput'; // Assuming these are pre-styled or will be
-import PasswordInput from './PasswordInput'; // Assuming these are pre-styled or will be
-import SocialButtons from './SocialButtons'; // Assuming these are pre-styled or will be
+import { ArrowRight, Mail, Lock } from 'lucide-react';
+import TextInput from './TextInput';
+import PasswordInput from './PasswordInput';
+import SocialButtons from './SocialButtons';
 
 interface SignInFormProps {
   onSwitchToRegister: () => void;
@@ -90,8 +91,8 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToRegister }) => {
   return (
     <div className="w-full">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-black mb-2">Welcome back</h1>
-        <p className="text-slate-600">Sign in to your account to continue your journey</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back</h1> {/* Updated text color */}
+        <p className="text-slate-700">Sign in to your account to continue your journey</p> {/* Updated text color */}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -121,16 +122,15 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToRegister }) => {
           placeholder="••••••••"
           showPassword={showPassword}
           toggleShowPassword={() => setShowPassword(!showPassword)}
-          icon={<Lock className="w-5 h-5 text-slate-500" />}
         />
 
         <div className="flex items-center justify-between">
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
-              className="rounded bg-green-100 border-green-200 text-purple-600 focus:ring-purple-600/50 focus:ring-2"
+              className="rounded bg-indigo-100 border-indigo-200 text-purple-600 focus:ring-purple-600/50 focus:ring-2" // Updated bg and border
             />
-            <span className="text-sm text-slate-600">Remember me</span>
+            <span className="text-sm text-slate-700">Remember me</span> {/* Updated text color */}
           </label>
           <a
             href="#"
@@ -160,16 +160,16 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToRegister }) => {
 
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-green-100"></div>
+            <div className="w-full border-t border-indigo-100"></div> {/* Updated border color */}
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="bg-white/80 px-4 text-slate-600">Or continue with</span>
+            <span className="bg-white/80 px-4 text-slate-700">Or continue with</span> {/* Updated text color */}
           </div>
         </div>
 
-        <SocialButtons /> {/* Assuming this component is styled internally */}
+        <SocialButtons />
 
-        <p className="text-center text-slate-600 mt-6">
+        <p className="text-center text-slate-700 mt-6"> {/* Updated text color */}
           Don't have an account?{' '}
           <button
             type="button"
@@ -185,3 +185,4 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToRegister }) => {
 };
 
 export default SignInForm;
+

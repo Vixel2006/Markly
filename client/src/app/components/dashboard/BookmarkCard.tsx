@@ -24,7 +24,7 @@ interface BookmarkCardData {
   id: string;
   title: string;
   url: string;
-  summary: string;
+  summary: string; // The summary data will still be present in the bookmark object
   categories?: Category[]; // Array of Category objects
   collections: Collection[]; // Array of Collection objects
   tags: TagType[]; // Array of TagType objects
@@ -59,7 +59,8 @@ const BookmarkCard: React.FC<BookmarkCardProps> = ({ bookmark, onToggleFavorite 
         >
           {bookmark.url}
         </a>
-        <p className="text-gray-600 text-sm mb-4 line-clamp-3">{bookmark.summary}</p>
+        {/* Removed the summary display here */}
+        {/* <p className="text-gray-600 text-sm mb-4 line-clamp-3">{bookmark.summary}</p> */}
 
         <div className="flex flex-wrap gap-2 mb-4">
           {bookmark.categories?.map((cat) => (
@@ -67,7 +68,6 @@ const BookmarkCard: React.FC<BookmarkCardProps> = ({ bookmark, onToggleFavorite 
               key={cat.id}
               className="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full font-medium"
             >
-              {/* Enhancement: Display emoji if available, otherwise just name */}
               {cat.emoji ? `${cat.emoji} ${cat.name}` : cat.name}
             </span>
           ))}

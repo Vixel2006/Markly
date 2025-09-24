@@ -1,3 +1,4 @@
+// components/PricingSection.tsx
 "use client";
 import React from 'react';
 import Link from 'next/link';
@@ -88,7 +89,7 @@ const PricingSection: React.FC<PricingSectionProps> = ({ getSectionRef, visibleS
   return (
     <motion.section
       ref={getSectionRef('pricing-section')}
-      id="pricing"
+      id="pricing-section" // FIXED: ID now matches ref string
       className="py-24 px-6 bg-gradient-to-b from-white to-purple-50"
       initial="hidden"
       animate={visibleSections['pricing-section'] ? "visible" : "hidden"}

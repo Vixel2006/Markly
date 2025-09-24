@@ -1,3 +1,4 @@
+// components/Testimonials.tsx
 "use client";
 import React from 'react';
 import { Star } from 'lucide-react';
@@ -80,11 +81,11 @@ const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({ getSectionRef
 
   return (
     <motion.section
-      ref={getSectionRef('testimonials-section')} // Attach ref
-      id="testimonials" // Ensure ID matches
+      ref={getSectionRef('testimonials-section')}
+      id="testimonials-section" // FIXED: ID now matches ref string
       className="py-24 px-6 bg-white"
       initial="hidden"
-      animate={visibleSections['testimonials-section'] ? "visible" : "hidden"} // Animate based on visibility
+      animate={visibleSections['testimonials-section'] ? "visible" : "hidden"}
       variants={fadeInUp}
     >
       <div className="max-w-7xl mx-auto">

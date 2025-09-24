@@ -1,3 +1,4 @@
+// components/Navbar.tsx
 "use client";
 import React from 'react';
 import Link from 'next/link';
@@ -22,10 +23,10 @@ const Navigation = ({ isMenuOpen, setIsMenuOpen }) => {
           </motion.div>
 
           <div className="hidden md:flex items-center space-x-8">
-            <a href="#features" className="text-slate-700 hover:text-indigo-700 transition-colors font-medium">Features</a>
-            <a href="#demo" className="text-slate-700 hover:text-indigo-700 transition-colors font-medium">Demo</a>
-            <a href="#testimonials" className="text-slate-700 hover:text-indigo-700 transition-colors font-medium">Reviews</a>
-            <a href="#pricing" className="text-slate-700 hover:text-indigo-700 transition-colors font-medium">Pricing</a>
+            <a href="#features-section" className="text-slate-700 hover:text-indigo-700 transition-colors font-medium">Features</a> {/* UPDATED HREF */}
+            <a href="#demo-section" className="text-slate-700 hover:text-indigo-700 transition-colors font-medium">Demo</a> {/* UPDATED HREF */}
+            <a href="#testimonials-section" className="text-slate-700 hover:text-indigo-700 transition-colors font-medium">Reviews</a> {/* UPDATED HREF */}
+            <a href="#pricing-section" className="text-slate-700 hover:text-indigo-700 transition-colors font-medium">Pricing</a> {/* UPDATED HREF */}
           </div>
 
           <motion.div
@@ -61,10 +62,10 @@ const Navigation = ({ isMenuOpen, setIsMenuOpen }) => {
             transition={{ duration: 0.3 }}
           >
             <div className="px-6 py-4 space-y-4">
-              <a href="#features" onClick={() => setIsMenuOpen(false)} className="block text-slate-700 hover:text-indigo-700 transition-colors font-medium text-lg">Features</a>
-              <a href="#demo" onClick={() => setIsMenuOpen(false)} className="block text-slate-700 hover:text-indigo-700 transition-colors font-medium text-lg">Demo</a>
-              <a href="#testimonials" onClick={() => setIsMenuOpen(false)} className="block text-slate-700 hover:text-indigo-700 transition-colors font-medium text-lg">Reviews</a>
-              <a href="#pricing" onClick={() => setIsMenuOpen(false)} className="block text-slate-700 hover:text-indigo-700 transition-colors font-medium text-lg">Pricing</a>
+              <a href="#features-section" onClick={() => setIsMenuOpen(false)} className="block text-slate-700 hover:text-indigo-700 transition-colors font-medium text-lg">Features</a> {/* UPDATED HREF */}
+              <a href="#demo-section" onClick={() => setIsMenuOpen(false)} className="block text-slate-700 hover:text-indigo-700 transition-colors font-medium text-lg">Demo</a> {/* UPDATED HREF */}
+              <a href="#testimonials-section" onClick={() => setIsMenuOpen(false)} className="block text-slate-700 hover:text-indigo-700 transition-colors font-medium text-lg">Reviews</a> {/* UPDATED HREF */}
+              <a href="#pricing-section" onClick={() => setIsMenuOpen(false)} className="block text-slate-700 hover:text-indigo-700 transition-colors font-medium text-lg">Pricing</a> {/* UPDATED HREF */}
               <div className="pt-4 border-t border-indigo-100 space-y-3">
                 <Link href="/auth?form=signin" onClick={() => setIsMenuOpen(false)} className="block w-full text-left text-indigo-700 hover:text-indigo-900 transition-colors font-medium text-lg">Sign In</Link>
                 <Link href="/auth?form=register" onClick={() => setIsMenuOpen(false)} className="bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-3 rounded-full text-white w-full text-center font-semibold text-lg shadow-md hover:from-purple-600 hover:to-pink-600 transition-all">

@@ -11,8 +11,7 @@ interface PasswordInputProps {
   placeholder: string;
   showPassword: boolean;
   toggleShowPassword: () => void;
-  // Optional prop for icon, though Lock is hardcoded now
-  // icon?: React.ReactNode;
+  icon?: React.ReactNode; // Keep this prop for consistency with TextInput, though Lock is used internally
 }
 
 const PasswordInput: React.FC<PasswordInputProps> = ({
@@ -27,7 +26,7 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
 }) => {
   return (
     <div>
-      <label className="block text-sm font-medium text-black mb-2">{label}</label>
+      <label className="block text-sm font-medium text-gray-900 mb-2">{label}</label> {/* Updated text color */}
       <div className="relative">
         <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 w-5 h-5" />
         <input
@@ -35,11 +34,11 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
           name={name}
           value={value}
           onChange={onChange}
-          className={`w-full pl-12 pr-12 py-3 bg-white border rounded-xl text-black placeholder-slate-500
+          className={`w-full pl-12 pr-12 py-3 bg-white border rounded-xl text-gray-900 placeholder-slate-500
             focus:outline-none focus:ring-2 transition-all shadow-sm
             ${error
               ? 'border-red-500 focus:ring-red-500/50'
-              : 'border-green-200 focus:border-purple-500 focus:ring-purple-500/50'
+              : 'border-indigo-200 focus:border-purple-500 focus:ring-purple-500/50' // Updated border and ring color
             }`}
           placeholder={placeholder}
         />

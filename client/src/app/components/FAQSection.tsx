@@ -1,3 +1,4 @@
+// components/FAQSection.tsx
 "use client";
 import React from 'react';
 import { motion } from 'framer-motion';
@@ -52,7 +53,7 @@ const FAQSection: React.FC<FAQSectionProps> = ({ getSectionRef, visibleSections 
   return (
     <motion.section
       ref={getSectionRef('faq-section')}
-      id="faq"
+      id="faq-section" // FIXED: ID now matches ref string
       className="py-24 px-6 bg-white"
       initial="hidden"
       animate={visibleSections['faq-section'] ? "visible" : "hidden"}

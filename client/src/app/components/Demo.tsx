@@ -1,3 +1,4 @@
+// components/Demo.tsx
 "use client";
 import React, { useState, useEffect } from 'react';
 import { Search, Check, Folder, Brain, Zap, Sparkles } from 'lucide-react';
@@ -71,17 +72,17 @@ const InteractiveDemo: React.FC<InteractiveDemoProps> = ({ getSectionRef, visibl
 
   return (
     <motion.section
-      ref={getSectionRef('demo-section')} // Attach ref
-      id="demo" // Ensure ID matches
+      ref={getSectionRef('demo-section')}
+      id="demo-section" // FIXED: ID now matches ref string
       className="py-24 px-6 bg-gradient-to-b from-white to-indigo-50"
       initial="hidden"
-      animate={visibleSections['demo-section'] ? "visible" : "hidden"} // Animate based on visibility
-      variants={fadeInUp} // Apply animation to the section as a whole
+      animate={visibleSections['demo-section'] ? "visible" : "hidden"}
+      variants={fadeInUp}
     >
       <div className="max-w-7xl mx-auto">
         <motion.div
           className="text-center mb-16"
-          variants={fadeInUp} // Apply animation to the heading block
+          variants={fadeInUp}
         >
           <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">
             See The <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Magic</span> Happen

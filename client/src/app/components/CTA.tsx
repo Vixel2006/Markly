@@ -1,4 +1,4 @@
-// components/landing/CTASection.tsx
+// components/CTA.tsx
 "use client";
 import React from 'react';
 import Link from 'next/link';
@@ -19,11 +19,11 @@ const CTASection: React.FC<CTASectionProps> = ({ getStartedUrl, contactSalesUrl,
 
   return (
     <motion.section
-      ref={getSectionRef('cta-section')} // Attach ref
-      id="cta-section" // Ensure ID matches
+      ref={getSectionRef('cta-section')}
+      id="cta-section" // ID matches ref string
       className="py-24 px-6 bg-gradient-to-r from-purple-600 to-indigo-700 relative overflow-hidden"
       initial="hidden"
-      animate={visibleSections['cta-section'] ? "visible" : "hidden"} // Animate based on visibility
+      animate={visibleSections['cta-section'] ? "visible" : "hidden"}
       variants={fadeInUp}
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.15),transparent)]"></div>
