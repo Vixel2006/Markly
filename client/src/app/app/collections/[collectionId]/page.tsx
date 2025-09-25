@@ -448,32 +448,15 @@ const CollectionBookmarksPage = () => {
         onAddCollectionClick={() => setIsAddCollectionModalOpen(true)}
       />
 
-      <main className={`flex-1 transition-all duration-300 ${mainContentMl} p-8 custom-scrollbar`}>
+      <main className={`flex-1 transition-all duration-300 ${mainContentMl} p-8 pt-20 custom-scrollbar`}>
         <Header
-          searchQuery="" // Keep search functionality if needed, or pass real state
-          onSearchChange={() => {}} // Handle search change if search is active
-          onAddBookmarkClick={() => setIsAddBookmarkModalOpen(true)} // Enable adding bookmarks from here
-          totalBookmarksCount={bookmarks.length} // Show count for this collection
+          isSidebarExpanded={isSidebarExpanded}
+          onSidebarToggle={() => setIsSidebarExpanded(!isSidebarExpanded)}
+          currentPageTitle={collectionName}
+          onAddBookmarkClick={() => setIsAddBookmarkModalOpen(true)}
         />
 
-        <div className="flex items-center gap-4 mb-6">
-          <motion.button
-            onClick={() => router.push("/app/collections")}
-            className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
-            whileHover={{ scale: 1.05 }}
-            aria-label="Back to All Collections"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </motion.button>
-          <motion.h1
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-4xl font-bold text-gray-800"
-          >
-            Collection: {collectionName}
-          </motion.h1>
-        </div>
+
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}

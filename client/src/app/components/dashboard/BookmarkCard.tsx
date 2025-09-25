@@ -89,6 +89,11 @@ const BookmarkCard: React.FC<BookmarkCardProps> = ({ bookmark, onToggleFavorite 
               {tag.name}
             </span>
           ))}
+          {(!bookmark.tags || bookmark.tags.length === 0) &&
+            (!bookmark.categories || bookmark.categories.length === 0) &&
+            (!bookmark.collections || bookmark.collections.length === 0) && (
+              <span className="text-xs text-gray-500 italic">No tags or categories</span>
+            )}
         </div>
       </div>
       <div className="flex justify-between items-center text-gray-500 text-xs">

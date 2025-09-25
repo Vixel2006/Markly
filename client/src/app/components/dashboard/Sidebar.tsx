@@ -109,31 +109,21 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const handleNavLinkClick = (panel: string, path: string | undefined = undefined) => {
     setActivePanel(panel);
-    onClearFilters(); // Clear all filters (search query)
-    onCategorySelect(null); // Explicitly clear category filter
-    onCollectionSelect(null); // Explicitly clear collection filter
-    onTagSelect(null); // Explicitly clear tag filter
+    if (onClearFilters) onClearFilters(); // Clear all filters (search query)
+    if (onCategorySelect) onCategorySelect(null); // Explicitly clear category filter
+    if (onCollectionSelect) onCollectionSelect(null); // Explicitly clear collection filter
+    if (onTagSelect) onTagSelect(null); // Explicitly clear tag filter
     if (path) {
       router.push(path);
     }
   };
 
   const handleCollectionFilterClick = (collectionId: string) => {
-    setActivePanel("bookmarks"); // Always switch to bookmarks view when filtering
-    onCollectionSelect(collectionId);
-    // Clear other filters when a collection filter is applied
-    onCategorySelect(null);
-    onTagSelect(null);
-    router.push("/app"); // Navigate to the main app page which will show filtered bookmarks
+    router.push(`/app/collections/${collectionId}`);
   };
 
   const handleTagFilterClick = (tagId: string) => {
-    setActivePanel("bookmarks"); // Always switch to bookmarks view when filtering
-    onTagSelect(tagId);
-    // Clear other filters when a tag filter is applied
-    onCategorySelect(null);
-    onCollectionSelect(null);
-    router.push("/app"); // Navigate to the main app page which will show filtered bookmarks
+    router.push(`/app/bookmarks/all?tag=${tagId}`);
   };
 
   return (

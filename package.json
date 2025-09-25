@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@google/gemini-cli": "^0.6.1",
     "react-markdown": "^10.1.0"
   }
 }

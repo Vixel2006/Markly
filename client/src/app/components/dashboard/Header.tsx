@@ -19,7 +19,7 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   return (
     <div // Changed to div from motion.header to match usage in page components
-      className="fixed top-0 right-0 z-20 bg-white bg-opacity-95 backdrop-blur-sm p-4 w-full flex items-center justify-between shadow-sm border-b border-indigo-100"
+      className="fixed top-0 right-0 z-20 bg-white bg-opacity-95 backdrop-blur-sm p-4 w-full flex items-center justify-between shadow-sm border-b border-indigo-100 mb-6"
       // Styles for fixed position and dynamic margin/width based on sidebar state
       style={{ marginLeft: isSidebarExpanded ? '16rem' : '4rem', width: `calc(100% - ${isSidebarExpanded ? '16rem' : '4rem'})` }}
     >

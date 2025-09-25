@@ -16,7 +16,7 @@ interface RegisterFormProps {
 const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToSignIn }) => {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    name: '',
+    username: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -43,8 +43,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToSignIn }) => {
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'Full name is required';
+    if (!formData.username.trim()) {
+      newErrors.username = 'Username is required';
     }
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
@@ -82,7 +82,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToSignIn }) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: formData.name,
+          username: formData.username,
           email: formData.email,
           password: formData.password,
         }),
@@ -120,12 +120,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToSignIn }) => {
           </div>
         )}
         <TextInput
-          label="Full Name"
-          name="name"
-          value={formData.name}
+          label="Username"
+          name="username"
+          value={formData.username}
           onChange={handleInputChange}
-          error={errors.name}
-          placeholder="John Doe"
+          error={errors.username}
+          placeholder="johndoe"
           icon={<User className="w-5 h-5 text-slate-500" />}
           type="text"
         />

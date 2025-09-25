@@ -200,7 +200,7 @@ const EditBookmarkModal: React.FC<EditBookmarkModalProps> = ({
     const bookmarkData: BookmarkData = {
       title: title.trim(),
       url: url.trim(),
-      summary: summary.trim(),
+      summary: summary ? summary.trim() : "",
       // FIX: Changed to 'tags' and 'collections' to match backend
       tags: selectedTags,
       collections: selectedCollections,
@@ -948,18 +948,18 @@ const BookmarkDetailPage = () => {
 
       {/* Main Content Area */}
       <div
-        className={`flex-1 p-6 transition-all duration-300 ${mainContentMl} custom-scrollbar`}
+        className={`flex-1 p-6 pt-20 transition-all duration-300 ${mainContentMl} custom-scrollbar`}
       >
         <Header
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
+          isSidebarExpanded={isSidebarExpanded}
+          onSidebarToggle={() => setIsSidebarExpanded(!isSidebarExpanded)}
+          currentPageTitle="Bookmark Detail"
           onAddBookmarkClick={() => setIsAddBookmarkModalOpen(true)}
-          totalBookmarksCount={(allUserBookmarks || []).length}
         />
 
         {/* Bookmark Detail Content */}
         <motion.div
-          className="bg-white rounded-3xl shadow-xl p-8 max-w-4xl mx-auto border border-green-100 mt-8"
+          className="bg-white rounded-3xl shadow-xl p-8 max-w-4xl mx-auto border border-green-100"
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
