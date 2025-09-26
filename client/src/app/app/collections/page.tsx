@@ -4,8 +4,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Folder, BookOpen, LayoutList, Grip, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Sidebar from "../../components/dashboard/Sidebar";
-import Header from "../../components/dashboard/Header";
+
+
 import AddCollectionModal from "../../components/dashboard/AddCollectionModal";
 import ConfirmationModal from "../../components/dashboard/ConfirmationModel";
 
@@ -58,8 +58,7 @@ interface CollectionForDisplay extends Collection {
 
 const AllCollectionsPage = () => {
   const router = useRouter();
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
-  const [activePanel, setActivePanel] = useState<string>("collections");
+
   const [viewMode, setViewMode] = useState<'gallery' | 'list'>('gallery');
 
   const [collections, setCollections] = useState<CollectionForDisplay[]>([]);
@@ -266,7 +265,7 @@ const AllCollectionsPage = () => {
   // These should be memoized if they are complex calculations, but for now direct state is fine.
   // No changes needed here from previous review for these memoized values as they are derived from state.
 
-  const mainContentMl = isSidebarExpanded ? "ml-64" : "ml-16";
+
 
   if (loading) {
     return (
@@ -301,31 +300,10 @@ const AllCollectionsPage = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar
-        isExpanded={isSidebarExpanded}
-        onToggle={() => setIsSidebarExpanded(!isSidebarExpanded)}
-        activePanel={activePanel}
-        setActivePanel={setActivePanel}
-        categories={categories} // Pass calculated categories for sidebar display
-        collections={collections} // Pass collections with counts for sidebar display
-        tags={tags} // Pass tags for sidebar display
-        // The following props are for actual filtering, which isn't happening on this page directly
-        onCollectionSelect={() => {}}
-        selectedCollectionId={null}
-        onTagSelect={() => {}}
-        selectedTagId={null}
-        onClearFilters={() => {}}
-        onAddCategoryClick={() => {}}
-        onAddCollectionClick={() => setIsAddCollectionModalOpen(true)}
-      />
 
-      <main className={`flex-1 transition-all duration-300 ${mainContentMl} p-8 custom-scrollbar`}>
-        <Header
-          searchQuery=""
-          onSearchChange={() => {}}
-          onAddBookmarkClick={() => {}}
-          totalBookmarksCount={0}
-        />
+
+      <main className={`flex-1 transition-all duration-300 p-8 custom-scrollbar`}>
+
 
         <div className="flex justify-between items-center mb-6">
           <motion.h1

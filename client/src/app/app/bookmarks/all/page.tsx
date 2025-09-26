@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { BookOpen, Plus, X, Folder, Star } from "lucide-react";
+import { BookOpen, Plus, X, Folder, Star, Search, Filter } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion"; // AnimatePresence added for modals
-import Sidebar from "../../../components/dashboard/Sidebar"; // Adjusted path
-import Header from "../../../components/dashboard/Header"; // Adjusted path
+
+
 import AddBookmarkModal from "../../../components/dashboard/AddBookmarkModal"; // Adjusted path
 import AddCategoryModal from "../../../components/dashboard/AddCategoryModal"; // Adjusted path
 import AddCollectionModal from "../../../components/dashboard/AddCollectionModal"; // Adjusted path
@@ -81,19 +81,14 @@ interface BookmarkData {
 const MarklyDashboard = () => {
   const router = useRouter();
 
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
-  // Default to "bookmarks" view as the original component was AllBookmarksPage
-  const [activePanel, setActivePanel] = useState("bookmarks");
-  const [searchQuery, setSearchQuery] = useState("");
+
 
   const [userBookmarks, setUserBookmarks] = useState<FrontendBookmark[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
 
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-  const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
-  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+
 
   const [isAddBookmarkModalOpen, setIsAddBookmarkModalOpen] = useState(false);
   const [addBookmarkLoading, setAddBookmarkLoading] = useState(false);
@@ -107,8 +102,31 @@ const MarklyDashboard = () => {
   const [addCollectionLoading, setAddCollectionLoading] = useState(false);
   const [addCollectionError, setAddCollectionError] = useState<string | null>(null);
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+  const [activePanel, setActivePanel] = useState("dashboard");
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const handleClearFilters = useCallback(() => {
+    setSelectedCategoryId(null);
+    setSelectedCollectionId(null);
+    setSelectedTagId(null);
+    setSearchQuery("");
+    router.replace('/app/bookmarks/all');
+  }, [router]);
+
+  const isFilterActive = useMemo(() => {
+    return (
+      searchQuery !== "" ||
+      selectedCategoryId !== null ||
+      selectedCollectionId !== null ||
+      selectedTagId !== null
+    );
+  }, [searchQuery, selectedCategoryId, selectedCollectionId, selectedTagId]);
 
   // Adopted fetchData from the second code block
   const fetchData = useCallback(
@@ -428,10 +446,14 @@ const MarklyDashboard = () => {
     let filtered = userBookmarks;
 
     if (searchQuery) {
+      const lowerCaseQuery = searchQuery.toLowerCase();
       filtered = filtered.filter(bookmark =>
-        bookmark.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        bookmark.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        bookmark.url.toLowerCase().includes(searchQuery.toLowerCase())
+        (bookmark.title ?? '').toLowerCase().includes(lowerCaseQuery) ||
+        (bookmark.summary ?? '').toLowerCase().includes(lowerCaseQuery) ||
+        (bookmark.url ?? '').toLowerCase().includes(lowerCaseQuery) ||
+        (bookmark.tags?.some(tag => (tag.name ?? '').toLowerCase().includes(lowerCaseQuery))) ||
+        (bookmark.collections?.some(col => (col.name ?? '').toLowerCase().includes(lowerCaseQuery))) ||
+        (bookmark.categories?.some(cat => (cat.name ?? '').toLowerCase().includes(lowerCaseQuery)))
       );
     }
 
@@ -458,231 +480,150 @@ const MarklyDashboard = () => {
   }, [userBookmarks, searchQuery, selectedCategoryId, selectedCollectionId, selectedTagId]);
 
 
-  const mainContentMl = isSidebarExpanded ? "ml-64" : "ml-16";
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 text-slate-900 flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-xl font-semibold text-slate-700"
-        >
-          Loading your Markly knowledge base...
-        </motion.div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-red-50 text-red-700 flex flex-col items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-center"
-        >
-          <p className="text-xl font-bold mb-4">Error Loading Dashboard</p>
-          <p className="text-center mb-4">{error}</p>
-          <button
-            onClick={() => loadDashboardData()}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors mr-2"
-          >
-            Try Again
-          </button>
-          <button
-            onClick={() => {
-              localStorage.removeItem("token");
-              router.push("/auth");
-            }}
-            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
-          >
-            Re-login
-          </button>
-        </motion.div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 text-slate-900 flex relative">
-      {/* Sidebar */}
-      <Sidebar
-        isExpanded={isSidebarExpanded}
-        onToggle={() => setIsSidebarExpanded(!isSidebarExpanded)}
-        activePanel={activePanel}
-        setActivePanel={setActivePanel}
-        categories={categoriesForDisplay}
-        collections={collectionsForDisplay}
-        tags={tags || []} // Ensure tags is an array
-        onCategorySelect={setSelectedCategoryId}
-        selectedCategoryId={selectedCategoryId}
-        onCollectionSelect={setSelectedCollectionId}
-        selectedCollectionId={selectedCollectionId}
-        onTagSelect={setSelectedTagId}
-        selectedTagId={selectedTagId}
-        onClearFilters={() => {
-          setSelectedCategoryId(null);
-          setSelectedCollectionId(null);
-          setSelectedTagId(null);
-          setSearchQuery("");
-          // No change to activePanel here, allows user to clear filters within current panel
-        }}
-        onAddCategoryClick={() => setIsAddCategoryModalOpen(true)}
-        onAddCollectionClick={() => setIsAddCollectionModalOpen(true)}
-      />
-
       {/* Main Content Area */}
-      <div
-        className={`flex-1 p-6 transition-all duration-300 ${mainContentMl} custom-scrollbar`}
-      >
-        <Header
-          isSidebarExpanded={isSidebarExpanded}
-          onSidebarToggle={() => setIsSidebarExpanded(!isSidebarExpanded)}
-          currentPageTitle="All Bookmarks"
-          showSearch={true} // Show quick search on dashboard
-        />
+      <div className={`flex-1 p-6 transition-all duration-300 custom-scrollbar`}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="max-w-7xl mx-auto"
+        >
+          {/* Search and Filter Controls */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 border border-gray-200">
+            <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <Search className="w-5 h-5 text-indigo-600" /> Search & Filter All Bookmarks
+            </h2>
 
-        {/* Dashboard View */}
-        {activePanel === "dashboard" && (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
-              <motion.div className="bg-gradient-to-br from-pink-50 to-pink-100 p-6 rounded-2xl text-center" whileHover={{ scale: 1.05 }}>
-                <div className="text-3xl font-bold text-pink-600 mb-2">{(userBookmarks || []).length}</div>
-                <div className="text-sm font-medium text-slate-700">Total Bookmarks</div>
-              </motion.div>
-              <motion.div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-2xl text-center" whileHover={{ scale: 1.05 }}>
-                <div className="text-3xl font-bold text-purple-600 mb-2">{categoriesForDisplay.length}</div>
-                <div className="text-sm font-medium text-slate-700">Categories</div>
-              </motion.div>
-              <motion.div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-6 rounded-2xl text-center" whileHover={{ scale: 1.05 }}>
-                <div className="text-3xl font-bold text-yellow-600 mb-2">{collectionsForDisplay.length}</div>
-                <div className="text-sm font-medium text-slate-700">Collections</div>
-              </motion.div>
-              <motion.div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-2xl text-center" whileHover={{ scale: 1.05 }}>
-                <div className="text-3xl font-bold text-green-600 mb-2">{(tags || []).length}</div>
-                <div className="text-sm font-medium text-slate-700">Tags</div>
-              </motion.div>
+            <div className="flex flex-col md:flex-row items-center gap-4 mb-4">
+              <div className="relative flex-1 w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search all bookmarks by title, URL, tags..."
+                  className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-gray-50 text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-300 focus:outline-none shadow-sm placeholder-gray-500"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
             </div>
 
-            <div className="mt-8">
-              <h2 className="text-xl font-semibold text-black mb-4">Trending Tags This Week</h2>
+            {/* Active Filters Display */}
+            {isFilterActive && (
               <motion.div
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8 }}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-blue-50 border border-blue-200 text-blue-800 p-3 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm mt-4"
               >
-                {(tags || [])
-                  .sort((a, b) => (b.weeklyCount || 0) - (a.weeklyCount || 0))
-                  .slice(0, 6)
-                  .map((tag) => (
-                    <motion.div
-                      key={tag.id}
-                      className="bg-white border border-green-100 rounded-2xl shadow-md p-5 text-center flex flex-col items-center justify-center"
-                      whileHover={{ scale: 1.05 }}
-                    >
-                      <div className="text-3xl font-bold text-purple-600">#{tag.name}</div>
-                      <div className="text-sm text-slate-600">{tag.weeklyCount || 0} mentions</div>
-                    </motion.div>
-                  ))}
-                {(tags || []).length === 0 && (
-                  <p className="col-span-full text-center text-slate-600">No trending tags this week.</p>
-                )}
+                <div className="flex items-center space-x-2 flex-wrap gap-y-1">
+                  <Filter className="w-4 h-4 text-blue-600" />
+                  <span className="font-semibold text-base">Active Filters:</span>
+                  {searchQuery && (
+                    <span className="bg-blue-200 px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1">
+                      Search: "{searchQuery}" <X className="w-3 h-3 ml-1 cursor-pointer hover:text-blue-900" onClick={() => setSearchQuery("")} />
+                    </span>
+                  )}
+                  {selectedCategoryId && (
+                    <span className="bg-blue-200 px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1">
+                      Category: {categoriesForDisplay.find(c => c.id === selectedCategoryId)?.name} <X className="w-3 h-3 ml-1 cursor-pointer hover:text-blue-900" onClick={() => setSelectedCategoryId(null)} />
+                    </span>
+                  )}
+                  {selectedCollectionId && (
+                    <span className="bg-blue-200 px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1">
+                      Collection: {collectionsForDisplay.find(c => c.id === selectedCollectionId)?.name} <X className="w-3 h-3 ml-1 cursor-pointer hover:text-blue-900" onClick={() => setSelectedCollectionId(null)} />
+                    </span>
+                  )}
+                  {selectedTagId && (
+                    <span className="bg-blue-200 px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1">
+                      Tag: {allTags.find(t => t.id === selectedTagId)?.name} <X className="w-3 h-3 ml-1 cursor-pointer hover:text-blue-900" onClick={() => setSelectedTagId(null)} />
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={handleClearFilters}
+                  className="flex-shrink-0 ml-0 sm:ml-auto px-3 py-1.5 bg-blue-600 text-white rounded-full text-xs hover:bg-blue-700 transition-colors flex items-center gap-1 shadow-md"
+                >
+                  <X className="w-3 h-3" /> Clear All
+                </button>
               </motion.div>
-            </div>
+            )}
+          </div>
 
-            <div className="mt-8">
-              <h2 className="text-xl font-semibold text-black mb-4">Recent Bookmarks</h2>
-              <motion.div
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8 }}
-              >
-                {(userBookmarks || [])
-                  .slice(0, 6)
-                  .map((bookmark) => (
-                    <BookmarkCard
-                      key={bookmark.id}
-                      bookmark={bookmark}
-                      onToggleFavorite={handleToggleFavorite}
-                    />
-                  ))}
-                {(userBookmarks || []).length === 0 && (
-                  <div className="col-span-full text-center text-slate-600 py-16">
-                    <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                    <p className="text-xl font-semibold mb-2">No bookmarks yet</p>
-                    <p className="mb-4">Get started by adding your first bookmark!</p>
-                    <button
-                      onClick={() => setIsAddBookmarkModalOpen(true)}
-                      className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition-all"
-                    >
-                      Add Your First Bookmark
-                    </button>
-                  </div>
-                )}
-              </motion.div>
-            </div>
-          </>
-        )}
-
-        {/* All Bookmarks View (from the original AllBookmarksPage) */}
-        {activePanel === "bookmarks" && (
+          {/* All Bookmarks Grid */}
+          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-indigo-600" /> All Bookmarks ({filteredBookmarks.length})
+          </h2>
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ staggerChildren: 0.05 }}
           >
             {filteredBookmarks.length > 0 ? (
               filteredBookmarks.map((bookmark) => (
-                <BookmarkCard
+                <motion.div
                   key={bookmark.id}
-                  bookmark={bookmark}
-                  onToggleFavorite={handleToggleFavorite}
-                />
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <BookmarkCard
+                    bookmark={bookmark}
+                    onToggleFavorite={handleToggleFavorite}
+                  />
+                </motion.div>
               ))
             ) : (
-              <div className="col-span-full text-center text-gray-600 py-10">
+              <div className="col-span-full text-center text-gray-500 py-16 bg-white rounded-2xl shadow-lg border border-gray-200">
                 <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                <p className="text-xl font-semibold mb-2">No bookmarks found</p>
-                <p>Looks like you haven't added any bookmarks yet, or your filters are too strict.</p>
-                <button
-                  onClick={() => setIsAddBookmarkModalOpen(true)}
-                  className="mt-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition-all"
-                >
-                  Add Your First Bookmark
-                </button>
+                {isFilterActive ? (
+                  <>
+                    <p className="text-xl font-semibold mb-2">No bookmarks match your filters.</p>
+                    <p className="mb-4">Try adjusting your search or clearing some filters.</p>
+                    <button
+                      onClick={handleClearFilters}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-lg shadow-md transition-all flex items-center mx-auto gap-2"
+                    >
+                      <X className="w-4 h-4" /> Clear All Filters
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xl font-semibold mb-2">Your bookmark list is empty!</p>
+                    <p className="mb-4">Start adding bookmarks to see them here.</p>
+                    <button
+                      onClick={() => setIsAddBookmarkModalOpen(true)}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-5 rounded-lg shadow-md transition-all flex items-center mx-auto gap-2"
+                    >
+                      <Plus className="w-4 h-4" /> Add New Bookmark
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </motion.div>
-        )}
-
+        </motion.div>
       </div>
 
-      {/* Modals - AnimatePresence ensures smooth unmounting */}
+      {/* Modals */}
       <AnimatePresence>
         {isAddBookmarkModalOpen && (
           <AddBookmarkModal
             isOpen={isAddBookmarkModalOpen}
             onClose={() => setIsAddBookmarkModalOpen(false)}
-            // Ensure data passed matches BookmarkData interface for backend
             onAddBookmark={({ url, title, summary, tags, collections, category }) =>
               handleAddBookmark({ url, title, summary, tag_ids: tags, collection_ids: collections, category_id: category })}
             isLoading={addBookmarkLoading}
             error={addBookmarkError}
-            categories={categories || []}
-            collections={collections || []}
-            tags={tags || []}
+            categories={categoriesForDisplay}
+            collections={collectionsForDisplay}
+            tags={tags}
             onAddNewTag={handleAddNewTag}
           />
         )}
-
         {isAddCategoryModalOpen && (
           <AddCategoryModal
             isOpen={isAddCategoryModalOpen}
@@ -692,7 +633,6 @@ const MarklyDashboard = () => {
             error={addCategoryError}
           />
         )}
-
         {isAddCollectionModalOpen && (
           <AddCollectionModal
             isOpen={isAddCollectionModalOpen}

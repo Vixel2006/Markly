@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react"; // Added useMemo
 import { motion } from "framer-motion";
 import { useRouter, useParams } from "next/navigation";
-import Sidebar from "../../../components/dashboard/Sidebar";
-import Header from "../../../components/dashboard/Header";
+
+
 import BookmarkCard from "../../../components/dashboard/BookmarkCard"; // Import BookmarkCard
 import { BookOpen, ArrowLeft } from "lucide-react";
 import AddBookmarkModal from "../../../components/dashboard/AddBookmarkModal"; // For Add Bookmark functionality
@@ -95,8 +95,7 @@ const CollectionBookmarksPage = () => {
   const params = useParams();
   const collectionId = params.collectionId as string;
 
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
-  const [activePanel, setActivePanel] = useState<string>("collections"); // Keep collections active
+
   const [bookmarks, setBookmarks] = useState<FrontendBookmark[]>([]); // FIX: Use FrontendBookmark
   const [collectionName, setCollectionName] = useState<string>("");
 
@@ -392,7 +391,7 @@ const CollectionBookmarksPage = () => {
   }, [fetchData, loadPageData]);
 
 
-  const mainContentMl = isSidebarExpanded ? "ml-64" : "ml-16";
+
 
   if (loading) {
     return (
@@ -426,35 +425,10 @@ const CollectionBookmarksPage = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar
-        isExpanded={isSidebarExpanded}
-        onToggle={() => setIsSidebarExpanded(!isSidebarExpanded)}
-        activePanel={activePanel}
-        setActivePanel={setActivePanel}
-        // Categories list removed from sidebar, but prop still needed for AddCategoryModal
-        // FIX: Passing empty array as categories prop since it's no longer displayed as a list
-        categories={sidebarCategories}
-        collections={sidebarCollections}
-        tags={sidebarTags}
-        // FIX: Removed onCategorySelect and selectedCategoryId props (not used for direct filtering here)
-        // onCategorySelect={() => {}}
-        // selectedCategoryId={null}
-        onCollectionSelect={() => {}} // No direct filtering action from this sidebar
-        selectedCollectionId={collectionId} // Highlight current collection in sidebar
-        onTagSelect={() => {}} // No direct filtering action from this sidebar
-        selectedTagId={null}
-        onClearFilters={() => {}} // No filters to clear in this context
-        onAddCategoryClick={() => setIsAddCategoryModalOpen(true)}
-        onAddCollectionClick={() => setIsAddCollectionModalOpen(true)}
-      />
 
-      <main className={`flex-1 transition-all duration-300 ${mainContentMl} p-8 pt-20 custom-scrollbar`}>
-        <Header
-          isSidebarExpanded={isSidebarExpanded}
-          onSidebarToggle={() => setIsSidebarExpanded(!isSidebarExpanded)}
-          currentPageTitle={collectionName}
-          onAddBookmarkClick={() => setIsAddBookmarkModalOpen(true)}
-        />
+
+      <main className={`flex-1 transition-all duration-300 p-8 pt-20 custom-scrollbar`}>
+
 
 
 

@@ -7,9 +7,8 @@ import {
   TrendingUp, BarChart3, LayoutDashboard, Clock // Added Clock for time-related stats
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import ProfileSidebar from "../../components/profile/ProfileSidebar";
 
-// Import the revised ProfileSidebar
-import ProfileSidebar from "../../components/profile/ProfileSidebar"; // Adjust path as necessary
 // Assuming BookmarkCard is available from your dashboard components
 import BookmarkCard from "../../components/dashboard/BookmarkCard"; // Adjust path as necessary
 
@@ -76,9 +75,9 @@ export default function ProfilePage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeProfileSection, setActiveProfileSection] = useState("overview");
 
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
-  const [activeProfileSection, setActiveProfileSection] = useState<string>("overview");
+
 
   // Re-use fetchData from dashboard for consistency
   const fetchData = useCallback(
@@ -269,26 +268,45 @@ export default function ProfilePage() {
   }, [userBookmarks]);
 
   const handleToggleFavorite = useCallback(async (bookmarkId: string) => {
-    // This is a dummy function. In a real app, you'd call an API to update the bookmark
-    // and then refresh the local state or reload data.
-    setUserBookmarks(prev => prev.map(bm =>
-      bm.id === bookmarkId ? { ...bm, isFav: !bm.isFav } : bm
-    ));
-    // Here you would also call your fetchData to persist this change
-    // e.g., await fetchData(`/api/bookmarks/${bookmarkId}`, 'PUT', { is_fav: !currentStatus });
-  }, []);
+    const bookmarkToToggle = userBookmarks.find((bm) => bm.id === bookmarkId);
+    if (!bookmarkToToggle) {
+      console.warn(`Bookmark with ID ${bookmarkId} not found.`);
+      return;
+    }
+
+    const newFavStatus = !bookmarkToToggle.isFav;
+
+    try {
+      await fetchData<BackendBookmark>(
+        `http://localhost:8080/api/bookmarks/${bookmarkId}`,
+        "PUT",
+        { is_fav: newFavStatus }
+      );
+      // Optimistically update UI, then reload data for consistency
+      setUserBookmarks((prev) =>
+        prev.map((bm) =>
+          bm.id === bookmarkId ? { ...bm, isFav: newFavStatus } : bm
+        )
+      );
+    } catch (err: any) {
+      console.error("Failed to toggle favorite status:", err);
+      setError(err.message || "Failed to toggle favorite status.");
+    }
+  }, [userBookmarks, fetchData]);
 
   // --- Loading, Error, No Profile States ---
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 text-slate-700">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center text-slate-700">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-xl font-semibold"
+          className="flex flex-col items-center gap-4 p-8 bg-white rounded-2xl shadow-xl border border-gray-200"
         >
-          Loading your profile and Markly activity...
+          <User className="w-12 h-12 text-purple-500 animate-pulse" />
+          <p className="text-xl font-semibold">Loading your profile...</p>
+          <p className="text-sm text-gray-500">Please wait a moment.</p>
         </motion.div>
       </div>
     );
@@ -296,20 +314,33 @@ export default function ProfilePage() {
 
   if (error) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-red-50 to-red-100 text-red-700">
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center text-red-700">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-xl font-semibold text-center"
+          className="flex flex-col items-center gap-4 p-8 bg-white rounded-2xl shadow-xl border border-red-200"
         >
-          Error: {error}
-          <button
-            onClick={() => loadProfileData()}
-            className="mt-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors block mx-auto"
-          >
-            Try Again
-          </button>
+          <X className="w-12 h-12 text-red-500" />
+          <p className="text-xl font-semibold">Error Loading Profile</p>
+          <p className="text-sm text-red-600 text-center">{error}</p>
+          <div className="flex gap-4 mt-4">
+            <button
+              onClick={() => loadProfileData()}
+              className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all"
+            >
+              Try Again
+            </button>
+            <button
+              onClick={() => {
+                localStorage.removeItem("token");
+                router.push("/auth");
+              }}
+              className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all"
+            >
+              Re-login
+            </button>
+          </div>
         </motion.div>
       </div>
     );
@@ -317,18 +348,20 @@ export default function ProfilePage() {
 
   if (!userProfile) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-yellow-50 to-yellow-100 text-yellow-700">
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-yellow-100 flex items-center justify-center text-yellow-700">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-xl font-semibold"
+          className="flex flex-col items-center gap-4 p-8 bg-white rounded-2xl shadow-xl border border-yellow-200"
         >
-          No profile data found. Please log in again.
+          <User className="w-12 h-12 text-yellow-500" />
+          <p className="text-xl font-semibold">No profile data found.</p>
+          <p className="text-sm text-gray-500">Please log in again.</p>
           <button
             onClick={() => handleLogout()}
-            className="mt-4 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg transition-colors block mx-auto"
-          >
+            className="mt-4 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all"
+            >
             Go to Login
           </button>
         </motion.div>
@@ -336,23 +369,16 @@ export default function ProfilePage() {
     );
   }
 
-  const mainContentMl = isSidebarExpanded ? "ml-64" : "ml-16";
+
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 text-slate-900 flex relative">
-      {/* Profile Sidebar */}
+    <div className="min-h-screen bg-gray-50 text-slate-900 flex">
       <ProfileSidebar
-        isExpanded={isSidebarExpanded}
-        onToggleExpand={() => setIsSidebarExpanded(!isSidebarExpanded)}
         activeSection={activeProfileSection}
-        setActiveSection={setActiveProfileSection}
+        onSectionChange={setActiveProfileSection}
         onLogout={handleLogout}
       />
-
-      {/* Main Content Area */}
-      <div
-        className={`flex-1 p-6 transition-all duration-300 ${mainContentMl} custom-scrollbar pt-10`}
-      >
+      <div className="flex-1 p-6 transition-all duration-300 custom-scrollbar">
         <motion.div
           className="bg-white rounded-3xl shadow-xl p-8 max-w-4xl mx-auto border border-indigo-100" // Consistent card styling
           initial={{ opacity: 0, y: 50 }}

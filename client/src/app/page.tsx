@@ -7,15 +7,15 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Import all your section components
-import Navigation from './components/Navbar';
-import HeroSection from './components/Hero';
-import InteractiveDemo from './components/Demo';
-import FeaturesSection from './components/Features';
-import TestimonialsSection from './components/Testimonials';
-import PricingSection from './components/PricingSection';
-import FAQSection from './components/FAQSection';
-import CTASection from './components/CTA';
-import FooterSection from './components/Footer';
+import Navigation from './components/landing/Navbar';
+import HeroSection from './components/landing/Hero';
+import InteractiveDemo from './components/landing/Demo';
+import FeaturesSection from './components/landing/Features';
+import TestimonialsSection from './components/landing/Testimonials';
+import PricingSection from './components/landing/PricingSection';
+import FAQSection from './components/landing/FAQSection';
+import CTASection from './components/landing/CTA';
+import FooterSection from './components/landing/Footer';
 
 
 const MarklyLandingPage = () => {
