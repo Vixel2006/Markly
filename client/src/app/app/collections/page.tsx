@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Folder, BookOpen, LayoutList, Grip, Plus, Trash2 } from "lucide-react";
+import { Folder, BookOpen, LayoutList, Grip, Plus, Trash2, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 
@@ -60,6 +60,7 @@ const AllCollectionsPage = () => {
   const router = useRouter();
 
   const [viewMode, setViewMode] = useState<'gallery' | 'list'>('gallery');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [collections, setCollections] = useState<CollectionForDisplay[]>([]);
   const [categories, setCategories] = useState<CategoryForDisplay[]>([]);
@@ -267,6 +268,16 @@ const AllCollectionsPage = () => {
 
 
 
+  const filteredCollections = useMemo(() => {
+    if (!searchQuery) {
+      return collections;
+    }
+    const lowerCaseQuery = searchQuery.toLowerCase();
+    return collections.filter(collection =>
+      collection.name.toLowerCase().includes(lowerCaseQuery)
+    );
+  }, [collections, searchQuery]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50 text-slate-700">
@@ -314,6 +325,16 @@ const AllCollectionsPage = () => {
           >
             Your Collections
           </motion.h1>
+          <div className="relative flex-grow mx-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search collections by name..."
+              className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-gray-50 text-gray-900 border border-gray-300 focus:ring-2 focus:ring-green-300 focus:outline-none shadow-sm placeholder-gray-500"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
           <div className="flex gap-2">
             <motion.button
               onClick={() => setViewMode('gallery')}
@@ -340,7 +361,7 @@ const AllCollectionsPage = () => {
           </div>
         </div>
 
-        {collections.length > 0 ? (
+        {filteredCollections.length > 0 ? (
           viewMode === 'gallery' ? (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -348,7 +369,7 @@ const AllCollectionsPage = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
             >
-              {collections.map((collection) => (
+              {filteredCollections.map((collection) => (
                 <motion.div
                   key={collection.id}
                   className="bg-white rounded-3xl shadow-lg p-6 flex flex-col items-center justify-center border border-green-100 relative"
@@ -387,7 +408,7 @@ const AllCollectionsPage = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="flex flex-col gap-4"
             >
-              {collections.map((collection) => (
+              {filteredCollections.map((collection) => (
                 <motion.div
                   key={collection.id}
                   className="bg-white rounded-3xl shadow-lg p-4 flex items-center justify-between border border-green-100"

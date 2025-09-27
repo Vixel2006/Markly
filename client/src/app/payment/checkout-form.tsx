@@ -1,133 +1,61 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
-import { useRouter } from 'next/navigation'; // For redirection after payment
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
-interface CheckoutFormProps {
-  clientSecret: string;
-}
-
-export function CheckoutForm({ clientSecret }: CheckoutFormProps) {
-  const stripe = useStripe();
-  const elements = useElements();
+export function CheckoutForm() {
   const router = useRouter();
-
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  const appearance = {
-    theme: 'night',
-    variables: {
-      colorPrimary: '#8B5CF6',
-      colorBackground: '#1E293B',
-      colorText: '#E2E8F0',
-      colorDanger: '#EF4444',
-      fontFamily: 'Inter, system-ui, sans-serif',
-      spacingUnit: '4px',
-      borderRadius: '8px',
-    },
-    rules: {
-      '.Input': {
-        backgroundColor: '#334155',
-        borderColor: '#475569',
-        color: '#E2E8F0',
-        boxShadow: 'none',
-      },
-      '.Input--invalid': {
-        borderColor: '#EF4444',
-      },
-      '.Label': {
-        color: '#94A3B8',
-      },
-      '.Tab': {
-        backgroundColor: '#334155',
-        color: '#CBD5E1',
-        borderColor: '#475569',
-      },
-      '.Tab--selected': {
-        backgroundColor: '#2563EB',
-        color: '#FFFFFF',
-      },
-      '.TabIcon': {
-        fill: '#94A3B8',
-      },
-      '.TabIcon--selected': {
-        fill: '#FFFFFF',
-      },
-    },
-  };
-
-  useEffect(() => {
-    if (!stripe) {
-      return;
-    }
-
-    if (!clientSecret) {
-      return;
-    }
-
-    // You can retrieve the PaymentIntent to check its status if needed,
-    // though confirmPayment usually handles this.
-    // stripe.retrievePaymentIntent(clientSecret).then(({ paymentIntent }) => {
-    //   switch (paymentIntent.status) {
-    //     case 'succeeded':
-    //       setMessage('Payment succeeded!');
-    //       break;
-    //     case 'processing':
-    //       setMessage('Your payment is processing.');
-    //       break;
-    //     case 'requires_payment_method':
-    //       setMessage('Your payment was not successful, please try again.');
-    //       break;
-    //     default:
-    //       setMessage('Something went wrong.');
-    //       break;
-    //   }
-    // });
-  }, [stripe, clientSecret]);
-
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-
-    if (!stripe || !elements) {
-      return;
-    }
-
     setIsLoading(true);
+    setMessage(null);
 
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/payment-success`,
-      },
-    });
+    try {
+      const response = await fetch('/api/lemonsqueezy/create-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          variantId: process.env.NEXT_PUBLIC_LEMONSQUEEZY_VARIANT_ID, // Ensure this is accessible client-side
+        }),
+      });
 
-    if (error.type === "card_error" || error.type === "validation_error") {
-      setMessage(error.message || "An error occurred with your payment details.");
-    } else {
-      setMessage("An unexpected error occurred.");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to create checkout session');
+      }
+
+      if (data.data && data.data.attributes && data.data.attributes.url) {
+        router.push(data.data.attributes.url);
+      } else {
+        throw new Error('Invalid checkout response from Lemon Squeezy');
+      }
+    } catch (error: any) {
+      console.error('[LEMONSQUEEZY_CHECKOUT_ERROR]', error);
+      setMessage(error.message || 'An unexpected error occurred.');
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   return (
     <form id="payment-form" onSubmit={handleSubmit} className="p-8 bg-slate-800/50 border border-slate-700 rounded-2xl shadow-2xl max-w-lg mx-auto">
-      <PaymentElement
-        id="payment-element"
-        options={{
-          layout: 'tabs',
-        }}
-      />
+      <div className="mb-4 text-center text-white text-lg">
+        Click below to proceed to secure checkout.
+      </div>
       
       <button
-        disabled={isLoading || !stripe || !elements}
+        disabled={isLoading}
         id="submit"
         className="mt-8 w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-8 py-4 rounded-xl text-lg font-semibold transition-all transform hover:scale-105 shadow-lg hover:shadow-xl"
       >
         <span id="button-text">
-          {isLoading ? "Processing..." : "Pay now"}
+          {isLoading ? "Redirecting..." : "Proceed to Checkout"}
         </span>
       </button>
 

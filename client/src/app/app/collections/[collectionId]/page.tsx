@@ -6,7 +6,7 @@ import { useRouter, useParams } from "next/navigation";
 
 
 import BookmarkCard from "../../../components/dashboard/BookmarkCard"; // Import BookmarkCard
-import { BookOpen, ArrowLeft } from "lucide-react";
+import { BookOpen, ArrowLeft, Search, Filter, X } from "lucide-react";
 import AddBookmarkModal from "../../../components/dashboard/AddBookmarkModal"; // For Add Bookmark functionality
 import AddCategoryModal from "../../../components/dashboard/AddCategoryModal"; // For Add Category functionality
 import AddCollectionModal from "../../../components/dashboard/AddCollectionModal"; // For Add Collection functionality
@@ -98,6 +98,7 @@ const CollectionBookmarksPage = () => {
 
   const [bookmarks, setBookmarks] = useState<FrontendBookmark[]>([]); // FIX: Use FrontendBookmark
   const [collectionName, setCollectionName] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -119,6 +120,27 @@ const CollectionBookmarksPage = () => {
   const [sidebarCollections, setSidebarCollections] = useState<CollectionForDisplay[]>([]);
   const [sidebarTags, setSidebarTags] = useState<Tag[]>([]); // FIX: Use consistent Tag interface
   const [allUserBookmarksForSidebar, setAllUserBookmarksForSidebar] = useState<FrontendBookmark[]>([]); // All bookmarks for sidebar counts
+
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+  const [allTags, setAllTags] = useState<Tag[]>([]); // To hold all tags for filter dropdown
+
+  const handleClearFilters = useCallback(() => {
+    setSelectedCategoryId(null);
+    setSelectedCollectionId(null);
+    setSelectedTagId(null);
+    setSearchQuery("");
+  }, []);
+
+  const isFilterActive = useMemo(() => {
+    return (
+      searchQuery !== "" ||
+      selectedCategoryId !== null ||
+      selectedCollectionId !== null ||
+      selectedTagId !== null
+    );
+  }, [searchQuery, selectedCategoryId, selectedCollectionId, selectedTagId]);
 
   const fetchData = useCallback(async <T,>(url: string, method: string = "GET", body?: any): Promise<T | null> => {
     const token = localStorage.getItem("token");
@@ -235,6 +257,8 @@ const CollectionBookmarksPage = () => {
       const actualAllTags = allTagsRaw || [];
       const actualAllBookmarks = allBookmarksRaw || [];
       const actualFilteredBookmarks = filteredBookmarksRaw || [];
+
+      setAllTags(actualAllTags); // Set all tags for filter dropdown
 
       // Set Collection Name
       if (fetchedCollectionDetails) {
@@ -393,6 +417,42 @@ const CollectionBookmarksPage = () => {
 
 
 
+  const filteredBookmarks = useMemo(() => {
+    let filtered = bookmarks;
+
+    if (searchQuery) {
+      const lowerCaseQuery = searchQuery.toLowerCase();
+      filtered = filtered.filter(bookmark =>
+        (bookmark.title ?? '').toLowerCase().includes(lowerCaseQuery) ||
+        (bookmark.url ?? '').toLowerCase().includes(lowerCaseQuery) ||
+        (bookmark.summary ?? '').toLowerCase().includes(lowerCaseQuery) ||
+        (bookmark.tags?.some(tag => (tag.name ?? '').toLowerCase().includes(lowerCaseQuery))) ||
+        (bookmark.collections?.some(col => (col.name ?? '').toLowerCase().includes(lowerCaseQuery))) ||
+        (bookmark.categories?.some(cat => (cat.name ?? '').toLowerCase().includes(lowerCaseQuery)))
+      );
+    }
+
+    if (selectedCategoryId) {
+      filtered = filtered.filter(bookmark =>
+        bookmark.categories.some(cat => cat.id === selectedCategoryId)
+      );
+    }
+
+    if (selectedCollectionId) {
+      filtered = filtered.filter(bookmark =>
+        bookmark.collections.some(col => col.id === selectedCollectionId)
+      );
+    }
+
+    if (selectedTagId) {
+      filtered = filtered.filter(bookmark =>
+        bookmark.tags.some(tag => tag.id === selectedTagId)
+      );
+    }
+
+    return filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [bookmarks, searchQuery, selectedCategoryId, selectedCollectionId, selectedTagId]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50 text-slate-700">
@@ -427,19 +487,85 @@ const CollectionBookmarksPage = () => {
     <div className="flex min-h-screen bg-gray-50">
 
 
-      <main className={`flex-1 transition-all duration-300 p-8 pt-20 custom-scrollbar`}>
-
-
-
-
+      <main className={`flex-1 transition-all duration-300 p-8 custom-scrollbar`}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" // Example layout for bookmarks
+          transition={{ duration: 0.5 }}
+          className="max-w-7xl mx-auto"
         >
-          {bookmarks.length > 0 ? (
-            bookmarks.map((bookmark) => (
+          {/* Search and Filter Controls */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 border border-gray-200">
+            <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <Search className="w-5 h-5 text-indigo-600" /> Search & Filter Collection: {collectionName}
+            </h2>
+
+            <div className="flex flex-col md:flex-row items-center gap-4 mb-4">
+              <div className="relative flex-1 w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search bookmarks by title, URL, tags..."
+                  className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-gray-50 text-gray-900 border border-gray-300 focus:ring-2 focus:ring-indigo-300 focus:outline-none shadow-sm placeholder-gray-500"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Active Filters Display */}
+            {isFilterActive && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-blue-50 border border-blue-200 text-blue-800 p-3 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm mt-4"
+              >
+                <div className="flex items-center space-x-2 flex-wrap gap-y-1">
+                  <Filter className="w-4 h-4 text-blue-600" />
+                  <span className="font-semibold text-base">Active Filters:</span>
+                  {searchQuery && (
+                    <span className="bg-blue-200 px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1">
+                      Search: "{searchQuery}" <X className="w-3 h-3 ml-1 cursor-pointer hover:text-blue-900" onClick={() => setSearchQuery("")} />
+                    </span>
+                  )}
+                  {selectedCategoryId && (
+                    <span className="bg-blue-200 px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1">
+                      Category: {sidebarCategories.find(c => c.id === selectedCategoryId)?.name} <X className="w-3 h-3 ml-1 cursor-pointer hover:text-blue-900" onClick={() => setSelectedCategoryId(null)} />
+                    </span>
+                  )}
+                  {selectedCollectionId && (
+                    <span className="bg-blue-200 px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1">
+                      Collection: {sidebarCollections.find(c => c.id === selectedCollectionId)?.name} <X className="w-3 h-3 ml-1 cursor-pointer hover:text-blue-900" onClick={() => setSelectedCollectionId(null)} />
+                    </span>
+                  )}
+                  {selectedTagId && (
+                    <span className="bg-blue-200 px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1">
+                      Tag: {allTags.find(t => t.id === selectedTagId)?.name} <X className="w-3 h-3 ml-1 cursor-pointer hover:text-blue-900" onClick={() => setSelectedTagId(null)} />
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={handleClearFilters}
+                  className="flex-shrink-0 ml-0 sm:ml-auto px-3 py-1.5 bg-blue-600 text-white rounded-full text-xs hover:bg-blue-700 transition-colors flex items-center gap-1 shadow-md"
+                >
+                  <X className="w-3 h-3" /> Clear All
+                </button>
+              </motion.div>
+            )}
+          </div>
+
+          {/* Bookmarks Grid */}
+          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-indigo-600" /> Bookmarks in "{collectionName}" ({filteredBookmarks.length})
+          </h2>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" // Example layout for bookmarks
+          >
+          {filteredBookmarks.length > 0 ? (
+            filteredBookmarks.map((bookmark) => (
               <BookmarkCard // FIX: Render BookmarkCard here
                 key={bookmark.id}
                 bookmark={bookmark}
@@ -453,6 +579,7 @@ const CollectionBookmarksPage = () => {
               <p>Add some bookmarks and assign them to "{collectionName}".</p>
             </div>
           )}
+        </motion.div>
         </motion.div>
       </main>
 
