@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, Folder, Tags, Star, Pencil, X, Plus } from "lucide-react";
+import { BookOpen, Folder, Tags, Star, Pencil, X, Plus, Brain } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useDashboard } from "@/contexts/DashboardContext";
 
@@ -25,6 +25,67 @@ import { fetchData } from "@/lib/api";
 const BookmarkDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+
+  const [
+    summarizing,
+    setSummarizing,
+  ] = useState(false);
+  const [summarizeError, setSummarizeError] = useState<string | null>(null);
+
+  const handleSummarizeBookmark = async () => {
+    if (!bookmark) return;
+
+    setSummarizing(true);
+    setSummarizeError(null);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setSummarizeError("Authentication token missing. Please log in.");
+        router.push("/auth");
+        return;
+      }
+      console.log("Frontend: Token retrieved from localStorage:", token ? "Exists" : "Does not exist");
+
+      const BACKEND_API_BASE_URL = "http://localhost:8080"; // Or from environment variable
+      const response = await fetch(`${BACKEND_API_BASE_URL}/api/agent/summarize/${bookmark.id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to summarize bookmark';
+        const responseText = await response.text(); // Read body once
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.error || errorMessage;
+        } catch (jsonError) {
+          errorMessage = `Server error: ${response.status} - Non-JSON response: ${responseText || 'Invalid response from server.'}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      let result;
+      const responseText = await response.text(); // Read body once for success case
+      try {
+        result = JSON.parse(responseText);
+      } catch (jsonError) {
+        throw new Error(`Server returned non-JSON response for successful request: ${response.status} - ${responseText || 'Empty response'}`);
+      }
+      // Optionally, update the bookmark summary in the UI
+      setBookmark((prev) => prev ? { ...prev, summary: result.summary } : null);
+      loadDashboardData(); // Refresh dashboard data to reflect changes
+    } catch (error: any) {
+      console.error('Error summarizing bookmark:', error);
+      // Ensure that the error message displayed is the one we constructed,
+      // or a generic one if the error object itself is malformed.
+      setSummarizeError(error instanceof Error ? error.message : 'Failed to summarize bookmark');
+    } finally {
+      setSummarizing(false);
+    }
+  };
 
   const {
     // Destructure from useDashboard
@@ -298,6 +359,14 @@ const BookmarkDetailPage = () => {
                 <Pencil className="w-6 h-6 text-slate-500 hover:text-slate-700" />
               </button>
               <button
+                onClick={handleSummarizeBookmark}
+                className="p-2 rounded-full hover:bg-blue-100 transition-colors"
+                aria-label="Summarize Bookmark"
+                disabled={summarizing || editBookmarkLoading}
+              >
+                <BookOpen className="w-6 h-6 text-blue-500 hover:text-blue-700" />
+              </button>
+              <button
                 onClick={() => handleToggleFavorite(bookmark.id)}
                 className="p-2 rounded-full hover:bg-yellow-100 transition-colors"
                 aria-label="Toggle Favorite"
@@ -375,6 +444,18 @@ const BookmarkDetailPage = () => {
             Added on: {formatDateTime(bookmark.createdAt)}
           </div>
         </motion.div>
+        {summarizeError && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4 max-w-4xl mx-auto"
+            role="alert"
+          >
+            <strong className="font-bold">Error: </strong>
+            <span className="block sm:inline">{summarizeError}</span>
+          </motion.div>
+        )}
       </div>
 
       {/* Modals */}

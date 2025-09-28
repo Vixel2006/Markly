@@ -78,8 +78,11 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToRegister }) => {
       }
 
       const { token } = await res.json();
+      console.log("Token received from backend:", token);
       localStorage.setItem("token", token);
+      console.log("Token stored in localStorage:", localStorage.getItem("token"));
       router.push('/app'); // Redirect to dashboard
+      console.log("Redirecting to /app");
     } catch (err: any) {
       console.error("Network error:", err);
       setErrors({ general: err.message || "Something went wrong. Please try again." });

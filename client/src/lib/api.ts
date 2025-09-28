@@ -3,9 +3,6 @@ export const fetchData = async <T,>(url: string, method: string = "GET", body?: 
     const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
     if (!token) {
         console.error("Authentication token missing.");
-        if (typeof window !== 'undefined') {
-            window.location.href = "/auth";
-        }
         throw new Error("Authentication token missing. Please log in.");
     }
 
@@ -14,14 +11,13 @@ export const fetchData = async <T,>(url: string, method: string = "GET", body?: 
             method,
             headers: {
                 "Content-Type": "application/json",
-                Authorization: `${token}`,
+                Authorization: `Bearer ${token}`,
             },
             body: body ? JSON.stringify(body) : undefined,
         });
 
         if (!response.ok) {
             if (response.status === 401 && typeof window !== 'undefined') {
-                localStorage.removeItem("token");
                 window.location.href = "/auth";
                 throw new Error("Unauthorized. Please log in again.");
             }
