@@ -11,7 +11,7 @@ import AddCategoryModal from "../../../components/dashboard/AddCategoryModal"; /
 import AddCollectionModal from "../../../components/dashboard/AddCollectionModal"; // Adjusted path
 import BookmarkCard from "../../../components/dashboard/BookmarkCard"; // Adjusted path
 
-// Interfaces from the second code block, adopted for consistency
+import { fetchData } from "@/lib/api";
 interface Category {
   id: string;
   name: string;
@@ -128,67 +128,6 @@ const MarklyDashboard = () => {
     );
   }, [searchQuery, selectedCategoryId, selectedCollectionId, selectedTagId]);
 
-  // Adopted fetchData from the second code block
-  const fetchData = useCallback(
-    async <T,>(
-      url: string,
-      method: string = "GET",
-      body?: any
-    ): Promise<T | null> => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        console.warn("No token found. User might not be authenticated.");
-        setError("Authentication token missing. Please log in.");
-        router.push("/auth");
-        return null;
-      }
-
-      try {
-        const fetchOptions: RequestInit = {
-          method: method,
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `${token}`,
-          },
-        };
-        if (body) {
-          fetchOptions.body = JSON.stringify(body);
-        }
-
-        const res = await fetch(url, fetchOptions);
-
-        if (!res.ok) {
-          if (res.status === 401) {
-            localStorage.removeItem("token");
-            router.push("/auth");
-            throw new Error("Unauthorized. Please log in again.");
-          }
-          const errText = await res.text();
-          try {
-            const errorJson = JSON.parse(errText);
-            throw new Error(
-              errorJson.message ||
-                `Failed to fetch from ${url}: ${res.status} - ${errText}`
-            );
-          } catch {
-            throw new Error(
-              `Failed to fetch from ${url}: ${res.status} - ${errText}`
-            );
-          }
-        }
-
-        if (res.status === 204 || res.headers.get("Content-Length") === "0") {
-          return null;
-        }
-
-        return await res.json();
-      } catch (err: any) {
-        console.error(`Network or API error fetching from ${url}: `, err);
-        throw err; // Re-throw to be handled by calling function
-      }
-    },
-    [router]
-  );
 
   // Adopted handleAddNewTag from the second code block
   const handleAddNewTag = useCallback(async (tagName: string): Promise<Tag | null> => {

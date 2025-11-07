@@ -48,15 +48,23 @@ const FooterSection = () => {
               Empowering knowledge with AI.
             </p>
             <div className="flex gap-4">
-              <Link href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Markly on Twitter">
+              <a
+                href="https://twitter.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Markly on Twitter">
                 <Twitter className="w-5 h-5 text-slate-600 hover:text-indigo-500 cursor-pointer transition-colors" />
-              </Link>
-              <Link href="https://github.com" target="_blank" rel="noopener noreferrer" aria-label="Markly on GitHub">
+              </a>
+              <a
+                href="https://github.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Markly on GitHub">
                 <Github className="w-5 h-5 text-slate-600 hover:text-indigo-500 cursor-pointer transition-colors" />
-              </Link>
-              <Link href="mailto:info@markly.com" aria-label="Email Markly">
+              </a>
+              <a href="mailto:info@markly.com" aria-label="Email Markly">
                 <Mail className="w-5 h-5 text-slate-600 hover:text-indigo-500 cursor-pointer transition-colors" />
-              </Link>
+              </a>
             </div>
           </motion.div>
 

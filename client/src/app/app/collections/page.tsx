@@ -91,7 +91,7 @@ const AllCollectionsPage = () => {
         method,
         headers: {
           "Content-Type": "application/json",
-          Authorization: `${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: body ? JSON.stringify(body) : undefined,
       });
@@ -311,8 +311,6 @@ const AllCollectionsPage = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-
-
       <main className={`flex-1 transition-all duration-300 p-8 custom-scrollbar`}>
 
 
@@ -402,7 +400,7 @@ const AllCollectionsPage = () => {
               ))}
             </motion.div>
           ) : ( // List View
-            <motion.div
+            (<motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
@@ -442,7 +440,7 @@ const AllCollectionsPage = () => {
                   </div>
                 </motion.div>
               ))}
-            </motion.div>
+            </motion.div>)
           )
         ) : (
           <div className="col-span-full text-center text-gray-600 py-10">
@@ -458,7 +456,6 @@ const AllCollectionsPage = () => {
           </div>
         )}
       </main>
-
       <AddCollectionModal
         isOpen={isAddCollectionModalOpen}
         onClose={() => setIsAddCollectionModalOpen(false)}
@@ -466,7 +463,6 @@ const AllCollectionsPage = () => {
         isLoading={addCollectionLoading}
         error={addCollectionError}
       />
-
       {/* Confirmation Modal for Deletion */}
       <ConfirmationModal
         isOpen={isConfirmDeleteModalOpen}

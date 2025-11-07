@@ -4,6 +4,8 @@ import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
+const MotionLink = motion(Link);
+
 interface CTASectionProps {
   getStartedUrl: string;
   contactSalesUrl: string;
@@ -35,24 +37,24 @@ const CTASection: React.FC<CTASectionProps> = ({ getStartedUrl, contactSalesUrl,
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <motion.div variants={fadeInUp}>
-              <Link
+              <MotionLink
                 href={getStartedUrl}
                 className="bg-white text-indigo-700 hover:bg-indigo-50 px-10 py-4 rounded-full text-lg font-bold transition-all shadow-lg hover:shadow-xl inline-flex items-center justify-center"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
                 Start Free Trial Now
-              </Link>
+              </MotionLink>
             </motion.div>
             <motion.div variants={fadeInUp}>
-              <Link
+              <MotionLink
                 href={contactSalesUrl}
                 className="border-2 border-white/40 hover:border-white/80 px-10 py-4 rounded-full text-lg font-bold text-white transition-all shadow-md hover:shadow-lg inline-flex items-center justify-center"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
                 Book a Demo
-              </Link>
+              </MotionLink>
             </motion.div>
           </div>
         </motion.div>

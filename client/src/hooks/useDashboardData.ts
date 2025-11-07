@@ -32,6 +32,9 @@ interface UseDashboardDataResult {
   handleAddCollection: (name: string) => Promise<void>;
   addCollectionLoading: boolean;
   addCollectionError: string | null;
+  handleUpdateCategory: (categoryId: string, name: string, emoji: string) => Promise<void>;
+  updateCategoryLoading: boolean;
+  updateCategoryError: string | null;
   handleAddNewTag: (tagName: string) => Promise<Tag | null>;
   addNewTagLoading: boolean;
   addNewTagError: string | null;
@@ -54,6 +57,8 @@ export const useDashboardData = (): UseDashboardDataResult => {
   const [addCategoryError, setAddCategoryError] = useState<string | null>(null);
   const [addCollectionLoading, setAddCollectionLoading] = useState(false);
   const [addCollectionError, setAddCollectionError] = useState<string | null>(null);
+  const [updateCategoryLoading, setUpdateCategoryLoading] = useState(false);
+  const [updateCategoryError, setUpdateCategoryError] = useState<string | null>(null);
   const [addNewTagLoading, setAddNewTagLoading] = useState(false);
   const [addNewTagError, setAddNewTagError] = useState<string | null>(null);
 
@@ -195,13 +200,27 @@ export const useDashboardData = (): UseDashboardDataResult => {
     setAddCategoryLoading(true);
     setAddCategoryError(null);
     try {
-      await fetchData("http://8080/api/categories", "POST", { name, emoji });
+      await fetchData("http://localhost:8080/api/categories", "POST", { name, emoji });
       await loadAllData();
     } catch (err: any) {
       setAddCategoryError(err.message || "Failed to add category.");
       throw err; // Re-throw to allow modal to catch and display
     } finally {
       setAddCategoryLoading(false);
+    }
+  }, [loadAllData]);
+
+  const handleUpdateCategory = useCallback(async (categoryId: string, name: string, emoji: string) => {
+    setUpdateCategoryLoading(true);
+    setUpdateCategoryError(null);
+    try {
+      await fetchData(`http://localhost:8080/api/categories/${categoryId}`, "PUT", { name, emoji });
+      await loadAllData(); // Re-fetch all data to update the UI
+    } catch (err: any) {
+      setUpdateCategoryError(err.message || "Failed to update category.");
+      throw err; // Re-throw to allow modal to catch and display
+    } finally {
+      setUpdateCategoryLoading(false);
     }
   }, [loadAllData]);
 
@@ -259,6 +278,9 @@ export const useDashboardData = (): UseDashboardDataResult => {
     handleAddCategory,
     addCategoryLoading,
     addCategoryError,
+    handleUpdateCategory,
+    updateCategoryLoading,
+    updateCategoryError,
     handleAddCollection,
     addCollectionLoading,
     addCollectionError,

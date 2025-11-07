@@ -58,7 +58,6 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
           {isExpanded ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>
-
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
         <nav className="space-y-2">
           <motion.div
@@ -131,7 +130,6 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
 
         </nav>
       </div>
-
       <div className="p-4 border-t border-indigo-100">
         <motion.button
           onClick={onLogout}

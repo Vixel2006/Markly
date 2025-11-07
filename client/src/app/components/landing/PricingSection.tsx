@@ -4,6 +4,8 @@ import React from 'react';
 import Link from 'next/link';
 import { Check } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 interface PricingPlan {
   name: string;
@@ -12,6 +14,7 @@ interface PricingPlan {
   features: string[];
   popular: boolean;
   color: string;
+  variantId: string;
 }
 
 interface PricingSectionProps {
@@ -20,6 +23,9 @@ interface PricingSectionProps {
 }
 
 const PricingSection: React.FC<PricingSectionProps> = ({ getSectionRef, visibleSections }) => {
+  const router = useRouter();
+  const { data: session, status } = useSession();
+
   const pricingPlans: PricingPlan[] = [
     {
       name: "Starter",
@@ -32,7 +38,8 @@ const PricingSection: React.FC<PricingSectionProps> = ({ getSectionRef, visibleS
         "Email support"
       ],
       popular: false,
-      color: "bg-indigo-50"
+      color: "bg-indigo-50",
+      variantId: "440338"
     },
     {
       name: "Pro",
@@ -48,7 +55,8 @@ const PricingSection: React.FC<PricingSectionProps> = ({ getSectionRef, visibleS
         "Analytics dashboard"
       ],
       popular: true,
-      color: "bg-purple-50"
+      color: "bg-purple-50",
+      variantId: "440339"
     },
     {
       name: "Enterprise",
@@ -64,9 +72,23 @@ const PricingSection: React.FC<PricingSectionProps> = ({ getSectionRef, visibleS
         "SLA guarantee"
       ],
       popular: false,
-      color: "bg-pink-50"
+      color: "bg-pink-50",
+      variantId: ""
     }
   ];
+
+  const handleCheckout = async (plan: PricingPlan) => {
+    if (status === "unauthenticated") {
+      router.push(`/auth?callbackUrl=/payment?planId=${plan.name}`); // Use plan.name or a unique ID for the callback
+      return;
+    }
+
+    try {
+      router.push(`/payment?plan=${plan.name}&price=${plan.price.replace('$', '')}`);
+    } catch (error) {
+      console.error("Error initiating checkout:", error);
+    }
+  };
 
   const fadeInUp = {
     hidden: { opacity: 0, y: 50 },
@@ -135,8 +157,19 @@ const PricingSection: React.FC<PricingSectionProps> = ({ getSectionRef, visibleS
                 ))}
               </ul>
 
-              <Link href={plan.name === 'Enterprise' ? '/contact-sales' : '/auth?form=register'} passHref legacyBehavior>
+              {plan.name === 'Enterprise' ? (
+                <Link href="/contact-sales" passHref>
+                  <motion.button
+                    className={`w-full py-4 rounded-full font-bold transition-all shadow-md bg-indigo-600 text-white hover:bg-indigo-700`}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Contact Sales
+                  </motion.button>
+                </Link>
+              ) : (
                 <motion.button
+                  onClick={() => handleCheckout(plan)}
                   className={`w-full py-4 rounded-full font-bold transition-all shadow-md ${
                     plan.popular
                       ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600'
@@ -145,9 +178,9 @@ const PricingSection: React.FC<PricingSectionProps> = ({ getSectionRef, visibleS
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  {plan.name === 'Enterprise' ? 'Contact Sales' : 'Start Free Trial'}
+                  {plan.price === '$0' ? 'Start Free Trial' : 'Get Started'}
                 </motion.button>
-              </Link>
+              )}
             </motion.div>
           ))}
         </div>

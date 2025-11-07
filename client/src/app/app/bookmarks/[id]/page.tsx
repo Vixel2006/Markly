@@ -364,7 +364,7 @@ const BookmarkDetailPage = () => {
                 aria-label="Summarize Bookmark"
                 disabled={summarizing || editBookmarkLoading}
               >
-                <BookOpen className="w-6 h-6 text-blue-500 hover:text-blue-700" />
+                <Brain className="w-6 h-6 text-blue-500 hover:text-blue-700" />
               </button>
               <button
                 onClick={() => handleToggleFavorite(bookmark.id)}
@@ -389,8 +389,10 @@ const BookmarkDetailPage = () => {
           </a>
 
           {/* Markdown content rendering */}
-          <div className="text-slate-700 text-lg leading-relaxed mb-6 markdown-content">
-            {bookmark.summary ? (
+          <div className="prose prose-lg max-w-none text-slate-700 leading-relaxed mb-6 markdown-content">
+            {summarizing ? (
+              <p className="text-blue-500 italic">Generating summary...</p>
+            ) : bookmark.summary ? (
               <ReactMarkdown>{bookmark.summary}</ReactMarkdown>
             ) : (
               <p className="text-slate-500 italic">No summary available.</p>

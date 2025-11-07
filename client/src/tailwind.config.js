@@ -17,6 +17,7 @@ module.exports = {
   },
   plugins: [
     require('tailwind-scrollbar')({ nocompatible: true }), // Add this line
+    require('@tailwindcss/typography'),
     // Other plugins you might have
   ],
 };

@@ -26,6 +26,9 @@ interface DashboardContextProps {
   handleAddCollection: (name: string) => Promise<void>;
   addCollectionLoading: boolean;
   addCollectionError: string | null;
+  handleUpdateCategory: (categoryId: string, name: string, emoji: string) => Promise<void>;
+  updateCategoryLoading: boolean;
+  updateCategoryError: string | null;
   handleAddNewTag: (tagName: string) => Promise<Tag | null>;
   addNewTagLoading: boolean;
   addNewTagError: string | null;
@@ -52,6 +55,9 @@ export const DashboardProvider = ({ children }: { children: React.ReactNode }) =
     handleAddCategory,
     addCategoryLoading,
     addCategoryError,
+    handleUpdateCategory,
+    updateCategoryLoading,
+    updateCategoryError,
     handleAddCollection,
     addCollectionLoading,
     addCollectionError,
@@ -76,6 +82,9 @@ export const DashboardProvider = ({ children }: { children: React.ReactNode }) =
     handleAddCategory,
     addCategoryLoading,
     addCategoryError,
+    handleUpdateCategory,
+    updateCategoryLoading,
+    updateCategoryError,
     handleAddCollection,
     addCollectionLoading,
     addCollectionError,

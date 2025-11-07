@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Markly Extension</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <div id="loginSection">
+      <h1>Login to Markly</h1>
+      <form id="loginForm" class="form">
+        <label for="email">Email:</label>
+        <input type="email" id="email" required>
+        <label for="password">Password:</label>
+        <input type="password" id="password" required>
+        <button type="submit" id="loginBtn">Login</button>
+      </form>
+      <div id="loginMessage" class="message"></div>
+    </div>
+
+    <div id="bookmarkSection" style="display: none;">
+      <h1>Add Bookmark</h1>
+      <form id="bookmarkForm" class="form">
+        <label for="url">URL:</label>
+        <input type="text" id="url" readonly>
+        <label for="title">Title:</label>
+        <input type="text" id="title">
+        <button type="submit" id="addBookmarkBtn">Add Bookmark</button>
+      </form>
+      <div id="bookmarkMessage" class="message"></div>
+
+      <hr>
+
+      <button id="logoutBtn">Logout</button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -155,7 +155,7 @@ const CollectionBookmarksPage = () => {
         method,
         headers: {
           "Content-Type": "application/json",
-          Authorization: `${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: body ? JSON.stringify(body) : undefined,
       });

@@ -3,6 +3,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { signIn, getSession } from 'next-auth/react';
 import { ArrowRight, Mail, Lock } from 'lucide-react';
 import TextInput from './TextInput';
 import PasswordInput from './PasswordInput';
@@ -60,31 +61,24 @@ const SignInForm: React.FC<SignInFormProps> = ({ onSwitchToRegister }) => {
     setErrors({});
 
     try {
-      const res = await fetch("http://localhost:8080/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-        credentials: "include",
+      const result = await signIn("credentials", {
+        redirect: false, // Do not redirect, we will handle it manually
+        email: formData.email,
+        password: formData.password,
       });
 
-      if (!res.ok) {
-        const errorText = await res.text();
-        // A more user-friendly error display might be needed in a real app
-        setErrors({ general: errorText || "Login Failed. Please check your credentials." });
-        return;
+      if (result?.error) {
+        setErrors({ general: result.error });
+      } else {
+        const session = await getSession();
+        if (session?.user?.accessToken) {
+          localStorage.setItem("token", session.user.accessToken);
+        }
+        router.push('/app'); // Redirect to dashboard
+        console.log("Redirecting to /app");
       }
-
-      const { token } = await res.json();
-      console.log("Token received from backend:", token);
-      localStorage.setItem("token", token);
-      console.log("Token stored in localStorage:", localStorage.getItem("token"));
-      router.push('/app'); // Redirect to dashboard
-      console.log("Redirecting to /app");
     } catch (err: any) {
-      console.error("Network error:", err);
+      console.error("Authentication error:", err);
       setErrors({ general: err.message || "Something went wrong. Please try again." });
     } finally {
       setIsLoading(false);

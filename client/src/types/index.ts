@@ -72,3 +72,12 @@ export interface UserProfile {
   email: string;
   createdAt: string;
 }
+
+export interface AISuggestion {
+  url: string;
+  title: string;
+  summary: string;
+  category: string; // Category name
+  collection: string; // Collection name
+  tags: string[]; // Array of tag names
+}

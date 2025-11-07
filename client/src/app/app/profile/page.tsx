@@ -64,6 +64,8 @@ interface FrontendBookmark {
 }
 
 
+import { fetchData } from "@/lib/api";
+
 // --- ProfilePage Component ---
 export default function ProfilePage() {
   const router = useRouter();
@@ -79,51 +81,6 @@ export default function ProfilePage() {
 
 
 
-  // Re-use fetchData from dashboard for consistency
-  const fetchData = useCallback(
-    async <T,>(url: string, method: string = "GET", body?: any): Promise<T | null> => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setError("Authentication token missing. Please log in.");
-        router.push("/auth");
-        return null;
-      }
-
-      try {
-        const fetchOptions: RequestInit = {
-          method: method,
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `${token}`,
-          },
-        };
-        if (body) {
-          fetchOptions.body = JSON.stringify(body);
-        }
-
-        const response = await fetch(url, fetchOptions);
-
-        if (!response.ok) {
-          if (response.status === 401) {
-            localStorage.removeItem("token");
-            router.push("/auth");
-            throw new Error("Unauthorized. Please log in again.");
-          }
-          const errData = await response.json().catch(() => ({ message: `API call failed with status ${response.status}` }));
-          throw new Error(errData.message || `API call failed with status ${response.status}`);
-        }
-
-        if (response.status === 204 || response.headers.get("Content-Length") === "0") {
-          return null;
-        }
-        return await response.json();
-      } catch (err: any) {
-        console.error(`Network or API error fetching from ${url}: `, err);
-        throw err;
-      }
-    },
-    [router]
-  );
 
   const loadProfileData = useCallback(async () => {
     setLoading(true);

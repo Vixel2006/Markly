@@ -22,10 +22,15 @@ export const fetchData = async <T,>(url: string, method: string = "GET", body?: 
                 throw new Error("Unauthorized. Please log in again.");
             }
             const errorBody = await response.text();
-            try {
-                const errData = JSON.parse(errorBody);
-                throw new Error(errData.message || `API call failed with status ${response.status}`);
-            } catch {
+            const contentType = response.headers.get("Content-Type");
+            if (contentType && contentType.includes("application/json")) {
+                try {
+                    const errData = JSON.parse(errorBody);
+                    throw new Error(errData.message || `API call failed with status ${response.status}`);
+                } catch {
+                    throw new Error(`API call failed with status ${response.status}: ${errorBody}`);
+                }
+            } else {
                 throw new Error(`API call failed with status ${response.status}: ${errorBody}`);
             }
         }
