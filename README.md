@@ -1,145 +1,167 @@
 # Markly
 
-Markly is a full-stack application designed to help users manage and organize their bookmarks efficiently. It provides a robust backend for data storage and retrieval, and a modern, responsive frontend for an intuitive user experience.
+**Markly** is a full-stack application for managing and organizing bookmarks efficiently.  
+It combines a robust Go backend with a modern, responsive Next.js frontend, providing users with a seamless experience to save, categorize, tag, and explore their bookmarks.
+
+> Private project — internal contributors only.
+
+---
+
+## Table of Contents
+1. [Features](#features)
+2. [Architecture Overview](#architecture-overview)
+3. [Technologies](#technologies)
+4. [Getting Started](#getting-started)
+5. [Development Workflow](#development-workflow)
+6. [Environment Variables](#environment-variables)
+7. [Project Structure](#project-structure)
+8. [Contributing](#contributing)
+9. [License](#license)
+
+---
 
 ## Features
 
-*   **Bookmark Management**: Add, edit, delete, and view your bookmarks.
-*   **Categorization**: Organize bookmarks into custom categories.
-*   **Tagging**: Apply tags to bookmarks for easy searching and filtering.
-*   **Collections**: Group related bookmarks into collections.
-*   **User Authentication**: Secure user accounts for personalized bookmark management.
+- **Bookmark Management:** Add, edit, delete, and view bookmarks.
+- **Categorization & Tagging:** Organize bookmarks by categories and tags for easier filtering.
+- **Collections:** Group related bookmarks together.
+- **AI Suggestions:** Personalized recommendations based on bookmarks, categories, or tags.
+- **User Authentication:** Secure accounts with unique profiles.
 
-## Demo
+---
 
-Check out a video demonstration of Markly below:
+## Architecture Overview
 
-[Watch the demo video here](./demos/demo.mp4)
+Markly follows a **frontend-backend separation**:
 
-(Right-click and "Save Link As..." or "Download Linked File As..." to download the video.)
+- **Frontend:** Next.js application handles the UI/UX.
+- **Backend:** Go API serves data and manages business logic.
+- **Database:** PostgreSQL for persistent storage.
+- **Deployment:** Docker is used for containerization; CI/CD pipelines handle automated testing and deployment.
 
+---
 
+## Technologies
 
-## Technologies Used
+**Backend:**
 
-### Backend
+- Go (v1.20+)
+- Gin Gonic (HTTP framework)
+- PostgreSQL (database)
+- Docker & Docker Compose
 
-*   **Go**: Primary language for the backend API.
-*   **Gin Gonic**: Web framework for building the API.
-*   **PostgreSQL**: Database for storing application data.
-*   **Docker**: For containerizing the database.
+**Frontend:**
 
-### Frontend
+- Next.js (React framework)
+- TypeScript
+- Tailwind CSS (UI styling)
 
-*   **Next.js**: React framework for building the user interface.
-*   **TypeScript**: For type-safe JavaScript development.
-*   **Tailwind CSS**: For rapid UI development and styling.
+---
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
-
 ### Prerequisites
 
-*   Go (version 1.20 or higher)
-*   Node.js (LTS version)
-*   npm or yarn
-*   Docker and Docker Compose
+- Go 1.20+
+- Node.js (LTS)
+- npm or yarn
+- Docker & Docker Compose
 
 ### Installation
 
-1.  **Clone the repository:**
+1. **Clone the repository**
+```bash
+git clone https://github.com/your-username/Markly.git
+cd Markly
+```
 
-    ```bash
-    git clone https://github.com/your-username/Markly.git
-    cd Markly
-    ```
+2. **Backend Setup**
+```bash
+cd backend/markly
+go mod tidy
+make docker-run  # Start PostgreSQL container
+# Add database migrations here if needed
+```
 
-2.  **Backend Setup:**
-
-    Navigate to the backend directory:
-
-    ```bash
-    cd backend/markly
-    ```
-
-    Install Go dependencies:
-
-    ```bash
-    go mod tidy
-    ```
-
-    Set up the database using Docker Compose:
-
-    ```bash
-    make docker-run
-    ```
-
-    This will start a PostgreSQL container. Ensure your `.env` file is configured correctly for database connection.
-
-    Run database migrations (if any, this step might need to be added later if not handled by `make run`):
-
-    ```bash
-    # Placeholder for migration command if needed
-    ```
-
-3.  **Frontend Setup:**
-
-    Navigate to the client directory:
-
-    ```bash
-    cd ../../client
-    ```
-
-    Install Node.js dependencies:
-
-    ```bash
-    npm install # or yarn install
-    ```
+3. **Frontend Setup**
+```bash
+cd ../../client
+npm install # or yarn install
+```
 
 ### Running the Application
 
-1.  **Start the Backend:**
+**Backend:**
+```bash
+cd backend/markly
+make run
+```
+**Frontend:**
+```bash
+cd client
+npm run dev # or yarn dev
+```
+Open `http://localhost:3000` to view the app.
 
-    From the `backend/markly` directory:
+---
 
-    ```bash
-    make run
-    ```
+## Development Workflow
 
-    This will start the Go API server, typically on `http://localhost:8080`.
+- **Branching:** Use feature branches named `feature/<name>` or `bugfix/<name>`.
+- **Commits:** Use clear, descriptive messages.
+- **Pull Requests:** PRs should reference issues and pass CI/CD checks.
+- **Testing:** Write unit tests for backend and frontend features. Backend tests: `go test ./...`. Frontend tests: `npm test`.
 
-2.  **Start the Frontend:**
+---
 
-    From the `client` directory:
+## Environment Variables
 
-    ```bash
-    npm run dev # or yarn dev
-    ```
+Create a `.env` file in the backend folder with variables like:
 
-    This will start the Next.js development server, typically on `http://localhost:3000`. Open `http://localhost:3000` in your browser to see the application.
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=your_user
+DB_PASSWORD=your_password
+DB_NAME=markly
+JWT_SECRET=your_secret
+```
+
+Frontend environment variables (optional):
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8080
+```
+
+---
 
 ## Project Structure
 
 ```
 .
-├── backend/                # Go backend application
-│   └── markly/
-│       ├── cmd/            # Main application entry points
-│       ├── internal/       # Internal packages (database, handlers, models, etc.)
-│       ├── go.mod          # Go module file
-│       └── Makefile        # Build and run commands
-└── client/                 # Next.js frontend application
-    ├── public/             # Static assets
-    ├── src/                # React components, pages, styles
-    ├── package.json        # Node.js dependencies
-    └── next.config.ts      # Next.js configuration
+├── backend/markly/       # Go backend
+│   ├── cmd/              # Entry points
+│   ├── internal/         # Packages: handlers, models, database, etc.
+│   ├── go.mod
+│   └── Makefile          # Build/run commands
+└── client/               # Next.js frontend
+    ├── public/           # Static assets
+    ├── src/              # Components, pages, styles
+    ├── package.json
+    └── next.config.ts
 ```
+
+---
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a pull request or open an issue.
+1. Fork the repo or create a branch for your work.
+2. Follow coding standards and add tests for new features.
+3. Submit a pull request referencing the relevant issue.
+4. Make sure CI/CD passes before merging.
+
+---
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE.md file for details. (Note: A LICENSE.md file should be created if not already present).
+MIT License — see [LICENSE.md](LICENSE.md) for details.
