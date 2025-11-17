@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Brain, Plus, Save, X, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -12,7 +12,9 @@ import {
   Tag,
   BookmarkData,
   BackendBookmark,
-} from "@/types"; // Assuming these types are available globally or in @/types
+} from "@/types";
+import BookmarkSelectionModal from "../../components/dashboard/BookmarkSelectionModal"; // Import the new modal component
+import MultiSelectDropdown from "../../components/ui/MultiSelectDropdown";
 
 // Define the structure for an AI-generated suggestion
 interface AISuggestion {
@@ -32,11 +34,30 @@ const AISuggestionsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [savingBookmarkId, setSavingBookmarkId] = useState<string | null>(null); // To track which suggestion is being saved
 
+  // State for filters
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string | undefined>(undefined);
+  const [selectedCollectionFilter, setSelectedCollectionFilter] = useState<string | undefined>(undefined);
+  const [selectedTagsFilter, setSelectedTagsFilter] = useState<string[]>([]);
+  const [selectedBookmarksFilter, setSelectedBookmarksFilter] = useState<string>(""); // Stores comma-separated IDs
+  const [isBookmarkModalOpen, setIsBookmarkModalOpen] = useState(false); // State for modal visibility
+
   // Data needed for saving bookmarks (categories, collections, tags)
   const [allCategories, setAllCategories] = useState<Category[]>([]);
   const [allCollections, setAllCollections] = useState<Collection[]>([]);
   const [allTags, setAllTags] = useState<Tag[]>([]);
+  const [allBookmarks, setAllBookmarks] = useState<BackendBookmark[]>([]);
   const [loadingMetaData, setLoadingMetaData] = useState(true);
+
+  const filteredBookmarksForModal = useMemo(() => {
+    let filtered = allBookmarks;
+    if (selectedCategoryFilter) {
+      filtered = filtered.filter((bm) => bm.category_id === selectedCategoryFilter);
+    }
+    if (selectedCollectionFilter) {
+      filtered = filtered.filter((bm) => bm.collection_ids?.includes(selectedCollectionFilter));
+    }
+    return filtered;
+  }, [allBookmarks, selectedCategoryFilter, selectedCollectionFilter]);
 
   useEffect(() => {
     if (session) {
@@ -48,15 +69,17 @@ const AISuggestionsPage = () => {
   const loadMetaData = useCallback(async () => {
     setLoadingMetaData(true);
     try {
-      const [fetchedCategories, fetchedCollections, fetchedTags] =
+      const [fetchedCategories, fetchedCollections, fetchedTags, fetchedBookmarks] =
         await Promise.all([
           fetchData<Category[]>(`http://localhost:8080/api/categories`),
           fetchData<Collection[]>(`http://localhost:8080/api/collections`),
           fetchData<Tag[]>(`http://localhost:8080/api/tags/user`),
+          fetchData<BackendBookmark[]>(`http://localhost:8080/api/bookmarks`),
         ]);
       setAllCategories(fetchedCategories || []);
       setAllCollections(fetchedCollections || []);
       setAllTags(fetchedTags || []);
+      setAllBookmarks(fetchedBookmarks || []);
     } catch (err: any) {
       setError(err.message || "Failed to load metadata for suggestions.");
     } finally {
@@ -72,16 +95,33 @@ const AISuggestionsPage = () => {
     setLoadingSuggestions(true);
     setError(null);
     try {
-      const fetchedSuggestions = await fetchData<AISuggestion[]>(
-        `http://localhost:8080/api/agent/suggestions`
-      );
+      const queryParams = new URLSearchParams();
+      if (selectedCategoryFilter) {
+        queryParams.append("category", selectedCategoryFilter);
+      }
+      if (selectedCollectionFilter) {
+        queryParams.append("collection", selectedCollectionFilter);
+      }
+      if (selectedTagsFilter.length > 0) {
+        queryParams.append("tag", selectedTagsFilter.join(","));
+      }
+      if (selectedBookmarksFilter) {
+        queryParams.append("bookmarks", selectedBookmarksFilter);
+      }
+
+      const queryString = queryParams.toString();
+      const url = `http://localhost:8080/api/agent/suggestions${
+        queryString ? `?${queryString}` : ""
+      }`;
+
+      const fetchedSuggestions = await fetchData<AISuggestion[]>(url);
       setSuggestions(fetchedSuggestions || []);
     } catch (err: any) {
       setError(err.message || "Failed to fetch AI suggestions.");
     } finally {
       setLoadingSuggestions(false);
     }
-  }, []);
+  }, [selectedCategoryFilter, selectedCollectionFilter, selectedTagsFilter, selectedBookmarksFilter]);
 
   const handleSaveSuggestion = useCallback(
     async (suggestion: AISuggestion, index: number) => {
@@ -142,55 +182,6 @@ const AISuggestionsPage = () => {
     [allCategories, allCollections, allTags, fetchData]
   );
 
-  if (loadingMetaData) {
-    return (
-      <div className="min-h-screen bg-gray-50 text-slate-900 flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-xl font-semibold text-slate-700"
-        >
-          Loading AI suggestions metadata...
-        </motion.div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-red-50 text-red-700 flex flex-col items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-center"
-        >
-          <p className="text-xl font-bold mb-4">Error</p>
-          <p className="text-center mb-4">{error}</p>
-          <button
-            onClick={() => {
-              loadMetaData();
-              fetchAISuggestions();
-            }}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors mr-2"
-          >
-            Try Again
-          </button>
-          <button
-            onClick={() => {
-              localStorage.removeItem("token");
-              router.push("/auth");
-            }}
-            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
-          >
-            Re-login
-          </button>
-        </motion.div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 text-slate-900 flex relative">
       <div className="flex-1 p-6 pt-20 transition-all duration-300 custom-scrollbar">
@@ -208,6 +199,56 @@ const AISuggestionsPage = () => {
             <p className="text-lg text-gray-700 mb-4">
               Get personalized bookmark suggestions based on your recent activity.
             </p>
+
+            {/* Filter Section */}
+            <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-left">
+              {/* Category Filter */}
+              <MultiSelectDropdown
+                label="Filter by Category"
+                items={allCategories.map((cat) => ({ id: cat.id, name: cat.name }))}
+                selectedItems={selectedCategoryFilter ? [selectedCategoryFilter] : []}
+                onSelectionChange={(ids) => setSelectedCategoryFilter(ids[0] || undefined)}
+                placeholder="All Categories"
+                isMulti={false}
+              />
+
+              {/* Collection Filter */}
+              <MultiSelectDropdown
+                label="Filter by Collection"
+                items={allCollections.map((col) => ({ id: col.id, name: col.name }))}
+                selectedItems={selectedCollectionFilter ? [selectedCollectionFilter] : []}
+                onSelectionChange={(ids) => setSelectedCollectionFilter(ids[0] || undefined)}
+                placeholder="All Collections"
+                isMulti={false}
+              />
+
+              {/* Tags Filter (Multi-select) */}
+              <MultiSelectDropdown
+                label="Filter by Tags"
+                items={allTags.map((tag) => ({ id: tag.id, name: tag.name }))}
+                selectedItems={selectedTagsFilter}
+                onSelectionChange={setSelectedTagsFilter}
+                placeholder="All Tags"
+                isMulti={true}
+              />
+
+              {/* Bookmark IDs Filter */}
+              <div>
+                <label htmlFor="bookmarkIdsFilter" className="block text-sm font-medium text-gray-700 mb-1">
+                  Filter by Bookmarks:
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsBookmarkModalOpen(true)}
+                  className="mt-1 w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 text-left cursor-pointer focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
+                >
+                  {selectedBookmarksFilter.split(",").filter(Boolean).length > 0
+                    ? `${selectedBookmarksFilter.split(",").filter(Boolean).length} bookmark(s) selected`
+                    : "Select Bookmarks"}
+                </button>
+              </div>
+            </div>
+
             <button
               onClick={fetchAISuggestions}
               disabled={loadingSuggestions}
@@ -224,6 +265,14 @@ const AISuggestionsPage = () => {
               )}
             </button>
           </div>
+
+          <BookmarkSelectionModal
+            isOpen={isBookmarkModalOpen}
+            onClose={() => setIsBookmarkModalOpen(false)}
+            bookmarks={filteredBookmarksForModal}
+            onSelectBookmarks={(ids) => setSelectedBookmarksFilter(ids.join(","))}
+            initialSelectedBookmarkIds={selectedBookmarksFilter.split(",").filter(Boolean)}
+          />
 
           <AnimatePresence mode="wait">
             {suggestions.length > 0 && (
